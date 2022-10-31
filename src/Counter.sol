@@ -3,6 +3,8 @@ pragma solidity ^0.8.13;
 
 import "incremental-merkle-tree.sol/IncrementalBinaryTree.sol";
 
+import "forge-std/console.sol";
+
 contract Counter {
     using IncrementalBinaryTree for IncrementalTreeData;
     uint256 public number;
@@ -22,5 +24,6 @@ contract Counter {
         number++;
         tree.insert(number * number);
         emit T1(tree.numberOfLeaves);
+        console.log("number: %d", number);
     }
 }
