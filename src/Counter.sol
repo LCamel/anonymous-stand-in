@@ -22,8 +22,8 @@ contract Counter {
 
     function increment() public {
         number++;
-        tree.insert(number * number);
-        emit T1(tree.numberOfLeaves);
-        console.log("number: %d", number);
+        uint val = number * number;
+        tree.insert(val);
+        console.log("val: %d root: %d", val, tree.root);
     }
 }
