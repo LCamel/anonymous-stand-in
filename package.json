@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@zk-kit/incremental-merkle-tree": "^1.0.0",
+    "big-integer": "^1.6.51",
+    "circomlibjs": "^0.0.8"
+  },
+  "devDependencies": {
+    "typescript": "^4.8.4"
+  }
+}
