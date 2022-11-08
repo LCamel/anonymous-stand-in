@@ -1,1 +1,4 @@
 incremental-merkle-tree.sol/=lib/zk-kit/packages/incremental-merkle-tree.sol/contracts/
+ds-test/=lib/forge-std/lib/ds-test/src/
+forge-std/=lib/forge-std/src/
+zk-kit/=lib/zk-kit/
