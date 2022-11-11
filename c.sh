@@ -29,5 +29,6 @@ npx snarkjs groth16 verify verification_key.json public.json proof.json
 
 
 npx snarkjs zkey export solidityverifier ${CIRCUIT}_0001.zkey ${CIRCUIT}_verifier.sol
+cat ${CIRCUIT}_verifier.sol | sed 's/pragma solidity ^0.6.11/pragma solidity ^0.8.13/' > ${BASE_DIR}/src/${CIRCUIT}_generated_verifier.sol
 npx snarkjs generatecall | tee call_remix.txt
 cat call_remix.txt | perl -lape 's/\"(.*?)"/uint($1)/g' > call_solidity.txt
