@@ -2,20 +2,13 @@ pragma circom 2.1.0;
 
 include "circomlib/poseidon.circom";
 include "circomlib/mux1.circom";
-
-/* INPUT = {
-    "leaf": "3",
-    "pathIndices": ["0", "1", "0", "0", "0"],
-    "siblings": [
-        "0",
-        "7853200120776062878684798364095072458815029376092732009249414926327459813530",
-        "7423237065226347324353380772367382631490014989348495481811164164159255474657",
-        "11286972368698509976183087595462810875513684078608517520839298933882497716792",
-        "3607627140608796879659380071776844901612302623152076817094415224584923813162"
-     ]
-} */
+include "circomlib/bitify.circom";
+/* INPUT =
+{"user":"124600769394618761707529974069218112888608942693","userPathIndices":["0","0","1","0","0"],"userSiblings":["0","14744269619966411208579211824598458697587494354926760081771325075741142829156","1903336837694064162031105257117176842042144176356952415994091550667815756145","11286972368698509976183087595462810875513684078608517520839298933882497716792","3607627140608796879659380071776844901612302623152076817094415224584923813162"],"secret":"3405691582","questionPathIndices":["1","0","0","0","0"],"questionSiblings":["123","13101852731087686565481713628481620697709655517747549254018203699193810735763","7423237065226347324353380772367382631490014989348495481811164164159255474657","11286972368698509976183087595462810875513684078608517520839298933882497716792","3607627140608796879659380071776844901612302623152076817094415224584923813162"]}
+*/
 
 // copied from https://github.com/semaphore-protocol/semaphore/blob/main/packages/circuits/tree.circom
+// i don't know how to include it in zkrepl.dev
 template MerkleTreeInclusionProof(nLevels) {
     signal input leaf;
     signal input pathIndices[nLevels];
@@ -52,4 +45,48 @@ template MerkleTreeInclusionProof(nLevels) {
     root <== hashes[nLevels];
 }
 
-component main = MerkleTreeInclusionProof(5);
+template AnonymousStandIn(nLevels) {
+    signal input user;
+    signal input userPathIndices[nLevels];
+    signal input userSiblings[nLevels];
+
+    signal input secret;
+
+    signal input questionPathIndices[nLevels];
+    signal input questionSiblings[nLevels];
+
+
+    signal output usersRoot;
+    signal output userIndex;
+    signal output questionsRoot;
+
+
+    // The user belongs to the list.
+    component users = MerkleTreeInclusionProof(nLevels);
+    component bits2Num = Bits2Num(nLevels);
+    users.leaf <== user;
+    for (var i = 0; i < nLevels; i++) {
+        users.pathIndices[i] <== userPathIndices[i];
+        users.siblings[i] <== userSiblings[i];
+        bits2Num.in[i] <== userPathIndices[i];
+    }
+    usersRoot <== users.root;
+    userIndex <== bits2Num.out;
+
+    // The user knows the answer of a question.
+    component hash = Poseidon(2);
+    hash.inputs[0] <== user;
+    hash.inputs[1] <== secret;
+    signal question <== hash.out;
+
+    // The question belongs to the list.
+    component questions = MerkleTreeInclusionProof(nLevels);
+    questions.leaf <== question;
+    for (var i = 0; i < nLevels; i++) {
+        questions.pathIndices[i] <== questionPathIndices[i];
+        questions.siblings[i] <== questionSiblings[i];
+    }
+    questionsRoot <== questions.root;
+}
+
+component main { public [user] }= AnonymousStandIn(5);
