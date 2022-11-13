@@ -61,16 +61,19 @@ template AnonymousStandIn(nLevels) {
     signal output questionsRoot;
 
 
-    // The user belongs to the list.
+    // The user belongs to the list
     component users = MerkleTreeInclusionProof(nLevels);
-    component bits2Num = Bits2Num(nLevels);
     users.leaf <== user;
     for (var i = 0; i < nLevels; i++) {
         users.pathIndices[i] <== userPathIndices[i];
         users.siblings[i] <== userSiblings[i];
-        bits2Num.in[i] <== userPathIndices[i];
     }
     usersRoot <== users.root;
+    // with index "userIndex".
+    component bits2Num = Bits2Num(nLevels);
+    for (var i = 0; i < nLevels; i++) {
+        bits2Num.in[i] <== userPathIndices[i];
+    }
     userIndex <== bits2Num.out;
 
     // The user knows the answer of a question.
@@ -89,4 +92,4 @@ template AnonymousStandIn(nLevels) {
     questionsRoot <== questions.root;
 }
 
-component main { public [user] }= AnonymousStandIn(5);
+component main { public [user] } = AnonymousStandIn(5);
