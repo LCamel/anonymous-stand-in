@@ -8,7 +8,7 @@ import "./anonymous_stand_in_generated_verifier.sol";
 contract AnonymousStandIn {
     using IncrementalBinaryTree for IncrementalTreeData;
 
-    //event Register(address standIn, uint question);
+    event Register(address standIn, uint question);
     event Proof(address user);
 
     uint private _userTreeRoot;
@@ -28,6 +28,7 @@ contract AnonymousStandIn {
         // TODO: dedup
         _questions.insert(question);
         _standIns.insert(uint160(msg.sender));
+        emit Register(address(uint160(msg.sender)), question);
         console.log("register: sender: %s questions root: %d standIns root: %d",
             msg.sender, _questions.root, _standIns.root);
     }
