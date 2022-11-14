@@ -1,0 +1,16 @@
+<script type="module">
+// https://docs.ethers.io/v5/single-page/#/v5/getting-started/-%23-getting-started--importing--web-browser
+
+import { ethers } from "./ethers-5.7.2.esm.min.js";
+
+const provider = new ethers.providers.Web3Provider(window.ethereum);
+console.log("provider: %s", provider);
+console.log("block number: %d", await provider.getBlockNumber());
+
+var events = await provider.getLogs({
+    address: "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98",
+    fromBlock: 7888889
+});
+console.log(events);
+
+</script>
