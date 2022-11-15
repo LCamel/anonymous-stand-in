@@ -3,14 +3,41 @@
 
 import { ethers } from "./ethers-5.7.2.esm.min.js";
 
+//const asiAddress = "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98";
+const asiAddress = "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98";
+
+const asiABI = [
+    "function register(uint question) public",
+    "event Register(address standIn, uint question)",
+];
+
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 console.log("provider: %s", provider);
 console.log("block number: %d", await provider.getBlockNumber());
 
+
 var events = await provider.getLogs({
-    address: "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98",
-    fromBlock: 7888889
+    address: asiAddress,
+    fromBlock: 7888888
 });
+console.log("======== events:");
 console.log(events);
 
+const asiContract = new ethers.Contract(asiAddress, asiABI, provider);
+const filter = asiContract.filters.Register(null, null);
+filter.fromBlock = 7888888;
+console.log("filter: ");
+console.log(filter);
+var events2 = await provider.getLogs(filter);
+console.log("======== events2:");
+console.log(events2);
+console.log(asiContract.interface.parseLog(events2[0]));
+/*
+await provider.send('eth_requestAccounts', []);
+const signer = provider.getSigner();
+console.log("the signer: ");
+console.log(signer);
+const asiWithSigner = asiContract.connect(signer);
+const tx = asiWithSigner.register(33);
+*/
 </script>
