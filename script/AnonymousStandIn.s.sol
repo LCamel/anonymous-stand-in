@@ -60,25 +60,26 @@ contract AnonymousStandInScript is Script {
         }
 
         // proof (see generateInput.sh / c.sh)
-        vm.startBroadcast(userPrivateKeys[1]);
-        asi.proof(
-            [
-                uint(0x0f74723f7c825c84a3c349465348bf24e36817bb7b0bd8923c8bc293c506268b),
-                uint(0x24abf7977393a42deae055a7b41a42cb244f3d27463747e828b2b60094629ac3)
-            ], [
+        uint[2] memory a = [
+                uint(0x11ba4d3778c9563d33c0e2c4db3e3f4e0c95d4da5451870f6ee45ae6ca388184),
+                uint(0x0a48ab5b0b781646ccde28153149dc6887b5e05c53baf2f3878472e06f48d76c)
+            ];
+        uint[2][2] memory b = [
                 [
-                    uint(0x03eae35f730f4f408a4d1a3943b2533af616ad559641d02cccd30e7d2daafb88),
-                    uint(0x2bfdf5e1dbe0767fb485d1319278bdbc4c61d4affbfb7544a7474ac5b9196723)
+                    uint(0x143569355a5d0073d5937d5aa81273eb5a1214202e80f5bb186a4485f1c93e3a),
+                    uint(0x1cda5c1f819cb3a45f99aa284b05a70a545f3eb009fdeecc5c6e98862570692b)
                 ], [
-                    uint(0x21b9ad8c10bb766e999095efdffa405747f4112fa80a91d87aa61e23a9d264d4),
-                    uint(0x0c47f75362a60f2317a1785784a6516df82b70519a3a9477715e98a041bf355a)
+                    uint(0x0b6c8e03a8e0bea78ad75aa5913907c4122bace72d10939508e4a84f97a18f67),
+                    uint(0x0f42dc8ef52047c3f87cfb9d5208d659ec6a3edd17d3bcc6752e435f18543258)
                 ]
-            ], [
-                uint(0x11ec0592969afe0052914b3e34e92c1a713f708132ef5baca1b7303df2262709),
-                uint(0x058e508353430723f44fe602c569d7ca50a4bdd7828f2489d472d0603a5e5fed)
-            ],
-            1
-        );
+            ];
+        uint[2] memory c = [
+                uint(0x0803be147c309732816c47f3272fedac8e4d26cff229a91ca851857d73065a50),
+                uint(0x04c432538d4a2302cfef8a4c4397f96c286b9dad3eb222975d57e1d16b911ee3)
+            ];
+
+        vm.startBroadcast(userPrivateKeys[1]);
+        asi.proof(a, b, c, 1);
         vm.stopBroadcast();
     }
 }
