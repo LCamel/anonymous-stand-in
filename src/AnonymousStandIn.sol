@@ -11,9 +11,13 @@ contract AnonymousStandIn {
     event Register(address standIn, uint question);
     event Proof(address user);
 
+    error AlreadyProofedError();
+    error VerificationError();
+
     uint private _userTreeRoot;
     IncrementalTreeData private _questions;
     IncrementalTreeData private _standIns;
+    bool[10000000] private _proofed; // TODO: confirm cost / bound
 
     Verifier private _verifier = new Verifier();
 
@@ -25,7 +29,7 @@ contract AnonymousStandIn {
 
     function register(uint question) public {
         // TODO: $
-        // TODO: dedup
+        // TODO: dedup for UX
         _questions.insert(question);
         _standIns.insert(uint160(msg.sender));
         emit Register(address(uint160(msg.sender)), question);
@@ -39,14 +43,24 @@ contract AnonymousStandIn {
             uint[2] memory c,
             uint userIndex
         ) public returns (bool r) {
-        // see the .sym for the order of the values
+        console.log("proof: sender: %s userIndex: %d", msg.sender, userIndex);
+        // every user should only proof once
+        // dev: verify this cheap condition first
+        if (_proofed[userIndex]) {
+            revert AlreadyProofedError();
+        }
+
+        // dev: see the .sym for the order of the values
         // or see the result of "snarkjs generatecall"
-        require(_verifier.verifyProof(
-            a, b, c, [_userTreeRoot, userIndex, _questions.root, uint160(msg.sender)]),
-            "verification failed");
+        if(! _verifier.verifyProof(
+            a, b, c, [_userTreeRoot, userIndex, _questions.root, uint160(msg.sender)])) {
+            revert VerificationError();
+        }
+
+        _proofed[userIndex] = true;
+
         emit Proof(msg.sender);
         return true;
-        // TODO: dedup
         // TODO: $
     }
 }

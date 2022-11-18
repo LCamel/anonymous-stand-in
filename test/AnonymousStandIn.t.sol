@@ -60,7 +60,16 @@ contract AnonymousStandInTest is Test {
                 uint(0x11ec0592969afe0052914b3e34e92c1a713f708132ef5baca1b7303df2262709),
                 uint(0x058e508353430723f44fe602c569d7ca50a4bdd7828f2489d472d0603a5e5fed)
             ];
+
         vm.prank(vm.addr(userPrivateKeys[1]));
         anonymousStandIn.proof(a, b, c, 1);
+
+        vm.expectRevert(AnonymousStandIn.AlreadyProofedError.selector);
+        vm.prank(vm.addr(userPrivateKeys[1]));
+        anonymousStandIn.proof(a, b, c, 1);
+
+        vm.expectRevert(AnonymousStandIn.VerificationError.selector);
+        vm.prank(vm.addr(userPrivateKeys[1]));
+        anonymousStandIn.proof(a, b, c, 123456);
     }
 }
