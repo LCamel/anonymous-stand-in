@@ -27,6 +27,10 @@ contract AnonymousStandIn {
         _standIns.init(5, 0);
     }
 
+    function createSession(uint userTreeRoot) public {
+        _userTreeRoot = userTreeRoot;
+    }
+
     function register(uint question) public {
         // TODO: $
         // TODO: dedup for UX
@@ -37,23 +41,34 @@ contract AnonymousStandIn {
             msg.sender, _questions.root, _standIns.root);
     }
 
-    function proof(
-            uint[2] memory a,
-            uint[2][2] memory b,
-            uint[2] memory c,
-            uint userIndex
-        ) public returns (bool r) {
+    function proof(uint[2] memory a, uint[2][2] memory b, uint[2] memory c, uint userIndex) public returns (bool r) {
         console.log("proof: sender: %s userIndex: %d", msg.sender, userIndex);
+        console.log("proof: _userTreeRoot: %d", _userTreeRoot);
+        console.log("proof: _questions.root: %d", _questions.root);
+        console.log("proof: a %d", a[0]);
+        console.log("proof: a %d", a[1]);
+        console.log("proof: b %d", b[0][0]);
+        console.log("proof: b %d", b[0][1]);
+        console.log("proof: b %d", b[1][0]);
+        console.log("proof: b %d", b[1][1]);
+        console.log("proof: c %d", c[0]);
+        console.log("proof: c %d", c[1]);
+
+
         // every user should only proof once
         // dev: verify this cheap condition first
         if (_proofed[userIndex]) {
+            console.log("AlreadyProofedError: userIndex: %d", userIndex);
             revert AlreadyProofedError();
         }
 
         // dev: see the .sym for the order of the values
         // or see the result of "snarkjs generatecall"
+
         if(! _verifier.verifyProof(
             a, b, c, [_userTreeRoot, userIndex, _questions.root, uint160(msg.sender)])) {
+            console.log("verification error: ", a[0]);
+            //, a[1], b[0][0], b[0][1], b[1][0], b[1][1], c[0], c[1], userIndex);
             revert VerificationError();
         }
 
