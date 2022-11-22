@@ -12,6 +12,26 @@ contract AnonymousStandInTest is Test {
         anonymousStandIn = new AnonymousStandIn(14491587431966538270500950809981262305760918678010866824965324294330536670835);
     }
 
+    /*
+    function testGenerateUserRoot() public {
+        uint[5] memory userPrivateKeys = [
+            vm.envUint("PRIVATE_KEY_0"),
+            vm.envUint("PRIVATE_KEY_1"),
+            vm.envUint("PRIVATE_KEY_2"),
+            vm.envUint("PRIVATE_KEY_3"),
+            vm.envUint("PRIVATE_KEY_4")
+        ];
+        for (uint i = 0; i < userPrivateKeys.length; i++) {
+            //address userAddr = vm.addr(userPrivateKeys[i]);
+            //uint256 aa = uint256(uint160(userAddr));
+            uint256 aa = 0x41414141;
+            bytes32 bb = bytes32(aa);
+            string memory ss = string(abi.encodePacked(bb));
+            vm.writeFile("./out/users.txt", ss);
+        }
+    }
+    */
+
     function testRegister() public {
         uint[5] memory userPrivateKeys = [
             vm.envUint("PRIVATE_KEY_0"),
