@@ -8,43 +8,84 @@ import "./anonymous_stand_in_generated_verifier.sol";
 contract AnonymousStandIn {
     using IncrementalBinaryTree for IncrementalTreeData;
 
-    event Register(address standIn, uint question);
-    event Proof(address user);
+    event Register(uint indexed sessionId, uint question, address standIn);
+    event Proof(uint indexed sessionId, address user);
 
+    error ZeroUserTreeRootError();
+    error SessionAlreadyExistsError();
+    error SessionDoesNotExistError();
     error AlreadyProofedError();
     error VerificationError();
 
-    uint private _userTreeRoot;
-    IncrementalTreeData private _questions;
-    IncrementalTreeData private _standIns;
-    bool[10000000] private _proofed; // TODO: confirm cost / bound
+    struct SessionData {
+        uint userTreeRoot;
+        IncrementalTreeData questions;
+        IncrementalTreeData standIns;
+        bool[10000000] proofed; // TODO: confirm cost / bound
+    }
+    mapping(uint => SessionData) private _sessions;
 
     Verifier private _verifier = new Verifier();
 
+    /*
     constructor(uint userTreeRoot) {
         _userTreeRoot = userTreeRoot;
         _questions.init(5, 0);
         _standIns.init(5, 0);
     }
+    */
 
-    function createSession(uint userTreeRoot) public {
-        _userTreeRoot = userTreeRoot;
+    function createSession(uint sessionId, uint userTreeRoot) public {
+        console.log("createSession: sessionId: %d userTreeRoot: %d", sessionId, userTreeRoot);
+        if (userTreeRoot == 0) {
+            revert ZeroUserTreeRootError();
+        }
+        SessionData storage session = _sessions[sessionId];
+        if (session.userTreeRoot != 0) {
+            revert SessionAlreadyExistsError();
+        }
+        session.userTreeRoot = userTreeRoot;
+        session.questions.init(5, 0);
+        console.log("createSession: session.questions.root: %d", session.questions.root);
+        session.standIns.init(5, 0);
+        console.log("createSession: _sessions[sessionId].userTreeRoot: %d", _sessions[sessionId].userTreeRoot);
+        // TODO: emit
     }
-
-    function register(uint question) public {
+    // a user can verify the user tree root before calling register()
+    function getUserTreeRoot(uint sessionId) public view returns (uint) {
+        return _sessions[sessionId].userTreeRoot;
+    }
+    // a user can verify the question tree root before calling proof()
+    function getQuestionTreeRoot(uint sessionId) public view returns (uint) {
+        return _sessions[sessionId].questions.root;
+    }
+    function register(uint sessionId, uint question) public {
         // TODO: $
         // TODO: dedup for UX
-        _questions.insert(question);
-        _standIns.insert(uint160(msg.sender));
-        emit Register(address(uint160(msg.sender)), question);
-        console.log("register: sender: %s questions root: %d standIns root: %d",
-            msg.sender, _questions.root, _standIns.root);
+        //console.log("register: sessionId: %d question: %d", sessionId, question);
+        //console.log("register: _sessions[sessionId].userTreeRoot: %d", _sessions[sessionId].userTreeRoot);
+        SessionData storage session = _sessions[sessionId];
+        //console.log("register: session.userTreeRoot: %d", session.userTreeRoot);
+        if (session.userTreeRoot == 0) {
+            revert SessionDoesNotExistError();
+        }
+        session.questions.insert(question);
+        session.standIns.insert(uint160(msg.sender));
+        emit Register(sessionId, question, address(uint160(msg.sender)));
+        console.log("register: sender: %s sessionId: %d", msg.sender, sessionId);
+        console.log("register: questions root: %d standIns root: %d", session.questions.root, session.standIns.root);
     }
 
-    function proof(uint[2] memory a, uint[2][2] memory b, uint[2] memory c, uint userIndex) public returns (bool r) {
+    function proof(uint sessionId, uint[2] memory a, uint[2][2] memory b, uint[2] memory c, uint userIndex) public returns (bool r) {
+        SessionData storage session = _sessions[sessionId];
+        if (session.userTreeRoot == 0) {
+            revert SessionDoesNotExistError();
+        }
+
+        console.log("proof: sessionId: %d", sessionId);
         console.log("proof: sender: %s userIndex: %d", msg.sender, userIndex);
-        console.log("proof: _userTreeRoot: %d", _userTreeRoot);
-        console.log("proof: _questions.root: %d", _questions.root);
+        console.log("proof: session.userTreeRoot: %d", session.userTreeRoot);
+        console.log("proof: session.questions.root: %d", session.questions.root);
         console.log("proof: a %d", a[0]);
         console.log("proof: a %d", a[1]);
         console.log("proof: b %d", b[0][0]);
@@ -57,8 +98,8 @@ contract AnonymousStandIn {
 
         // every user should only proof once
         // dev: verify this cheap condition first
-        if (_proofed[userIndex]) {
-            console.log("AlreadyProofedError: userIndex: %d", userIndex);
+        if (session.proofed[userIndex]) {
+            console.log("AlreadyProofedError: sessionId: %d userIndex: %d", sessionId, userIndex);
             revert AlreadyProofedError();
         }
 
@@ -66,15 +107,15 @@ contract AnonymousStandIn {
         // or see the result of "snarkjs generatecall"
 
         if(! _verifier.verifyProof(
-            a, b, c, [_userTreeRoot, userIndex, _questions.root, uint160(msg.sender)])) {
+            a, b, c, [session.userTreeRoot, userIndex, session.questions.root, uint160(msg.sender)])) {
             console.log("verification error: ", a[0]);
             //, a[1], b[0][0], b[0][1], b[1][0], b[1][1], c[0], c[1], userIndex);
             revert VerificationError();
         }
 
-        _proofed[userIndex] = true;
-
-        emit Proof(msg.sender);
+        session.proofed[userIndex] = true;
+        console.log("proof: mark userIndex as proofed: %d", userIndex);
+        emit Proof(sessionId, msg.sender);
         return true;
         // TODO: $
     }

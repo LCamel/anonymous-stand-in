@@ -29,6 +29,14 @@ contract AnonymousStandInScript is Script {
             vm.envUint("PRIVATE_KEY_9")
         ];
 
+        // we no longer need a userRoot to deploying the contract
+        uint deployerPrivateKey = userPrivateKeys[0];
+        vm.startBroadcast(deployerPrivateKey);
+        AnonymousStandIn asi = new AnonymousStandIn();
+        vm.stopBroadcast();
+        console.log("==== deployed: ", address(asi));
+
+/*
         // simulating the client-side tree root computation
         _userTreeData.init(5, 0);
         for (uint i = 0; i < userPrivateKeys.length; i++) {
@@ -44,6 +52,8 @@ contract AnonymousStandInScript is Script {
         AnonymousStandIn asi = new AnonymousStandIn(_userTreeData.root);
         vm.stopBroadcast();
         console.log("==== deployed: ", address(asi));
+        */
+
 /*
         // register
         for (uint i = 0; i < 3; i++) {

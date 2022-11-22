@@ -7,10 +7,40 @@ import "incremental-merkle-tree.sol/Hashes.sol";
 
 contract AnonymousStandInTest is Test {
     AnonymousStandIn public anonymousStandIn;
-
+    uint constant EMPTY_ROOT_LV5 = 19712377064642672829441595136074946683621277828620209496774504837737984048981;
     function setUp() public {
-        anonymousStandIn = new AnonymousStandIn(14491587431966538270500950809981262305760918678010866824965324294330536670835);
+        anonymousStandIn = new AnonymousStandIn();
     }
+    function testCreateSessionBasic() public {
+        anonymousStandIn.createSession(1, 2);
+    }
+    function testCreateSession(uint sessionId, uint userTreeRoot) public {
+        vm.assume(userTreeRoot != 0);
+        anonymousStandIn.createSession(sessionId, userTreeRoot);
+    }
+    function testCreateSessionZeroUserTreeRoot(uint sessionId) public {
+        vm.expectRevert(AnonymousStandIn.ZeroUserTreeRootError.selector);
+        anonymousStandIn.createSession(sessionId, 0);
+    }
+    function testGetUserTreeRoot(uint sessionId, uint userTreeRoot) public {
+        vm.assume(userTreeRoot != 0);
+        anonymousStandIn.createSession(sessionId, userTreeRoot);
+        uint ans = anonymousStandIn.getUserTreeRoot(sessionId);
+        assertEq(ans, userTreeRoot);
+    }
+    function testRegister(uint sessionId, uint userTreeRoot) public {
+        vm.assume(userTreeRoot != 0);
+        anonymousStandIn.createSession(sessionId, userTreeRoot);
+        assertEq(anonymousStandIn.getQuestionTreeRoot(sessionId), EMPTY_ROOT_LV5);
+
+
+
+        anonymousStandIn.register(sessionId, 100);
+        anonymousStandIn.register(sessionId, 200);
+        anonymousStandIn.register(sessionId, 300);
+        assertEq(anonymousStandIn.getQuestionTreeRoot(sessionId), 9820248798996799339337222160692833371779041583374940739456384906719907708545);
+    }
+
 
     /*
     function testGenerateUserRoot() public {
@@ -31,7 +61,7 @@ contract AnonymousStandInTest is Test {
         }
     }
     */
-
+/*
     function testRegister() public {
         uint[5] memory userPrivateKeys = [
             vm.envUint("PRIVATE_KEY_0"),
@@ -94,4 +124,5 @@ contract AnonymousStandInTest is Test {
         vm.prank(vm.addr(userPrivateKeys[1]));
         anonymousStandIn.proof(a, b, c, 123456);
     }
+*/
 }

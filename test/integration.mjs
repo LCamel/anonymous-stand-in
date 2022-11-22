@@ -1,6 +1,7 @@
 import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
 import { poseidon } from "circomlibjs";
 import { Contract, ethers, Signer, Wallet } from "ethers";
+import { exit } from "process";
 import { groth16 } from "snarkjs";
 
 const userPrivKeys = [
@@ -26,13 +27,16 @@ const asiSigners = asiPrivKeys.map((key) => new Wallet(key, provider));
 const asiContract = new Contract(
     "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98",
     [
-        "event Register(address standIn, uint question)",
-        "event Proof(address user)",
+        "event Register(uint indexed sessionId, uint question, address standIn)",
+        "event Proof(uint indexed sessionId, address user)",
+        "error SessionDoesNotExistError()",
         "error AlreadyProofedError()",
         "error VerificationError()",
-        "function createSession(uint userTreeRoot) public",
-        "function register(uint question) public",
-        "function proof(uint[2] memory a, uint[2][2] memory b, uint[2] memory c, uint userIndex) public returns (bool r)",
+        "function createSession(uint sessionId, uint userTreeRoot) public",
+        "function getUserTreeRoot(uint sessionId) public view returns (uint)",
+        "function getQuestionTreeRoot(uint sessionId) public view returns (uint)",
+        "function register(uint sessionId, uint question) public",
+        "function proof(uint sessionId, uint[2] memory a, uint[2][2] memory b, uint[2] memory c, uint userIndex) public returns (bool r)",
     ],
     provider
     );
@@ -49,25 +53,31 @@ const userAddrs = userPrivKeys.map((key) => ethers.utils.computeAddress(key));
 const userTree = getTree(userAddrs);
 console.log("userTree.root: %d", userTree.root);
 
-asiContract.connect(userSigners[4]).createSession(userTree.root);
+const sessionId = Date.now();
+console.log("==== sessionId: ", sessionId);
+const tx = await asiContract.connect(userSigners[4]).createSession(sessionId, userTree.root);
+const receipt = await tx.wait();
+console.log("createSession: ", receipt);
 
 // TODO: secret generation
 // TODO: random
 const secrets = userAddrs.map((addr, i) => i * 10);
 const questions = userAddrs.map((addr, i) => poseidon([addr, secrets[i]]));
 
-if ((await asiContract.queryFilter(asiContract.filters.Register(), 7888888)).length == 0) {
+if ((await asiContract.queryFilter(asiContract.filters.Register(sessionId), 7888888)).length == 0) {
     console.log("============= no events are found, creating...");
     for (let i = 0; i < asiSigners.length; i++) {
         console.log("questions[i]: ", questions[i]);
-        const tx = await asiContract.connect(asiSigners[i]).register(questions[i]);
+        const tx = await asiContract.connect(asiSigners[i]).register(sessionId, questions[i]);
         const receipt = await tx.wait();
     }
 } else {
     console.log("==== skip creating events...");
 }
 
-const filter = asiContract.filters.Register();
+// TODO: filter by sessionId
+// TODO: starting block
+const filter = asiContract.filters.Register(sessionId);
 const events = await asiContract.queryFilter(filter, 7888888);
 console.log("events.length: ", events.length);
 const event = events[0];
@@ -75,9 +85,9 @@ console.log(event.args.question.toBigInt());
 const questionTree = getTree(events.map((e) => e.args.question.toBigInt()));
 console.log("questionTree.root: ", questionTree.root);
 
-for (let i = 0; i < 5; i++) {
-    console.log("storage: ", BigInt(await provider.getStorageAt(asiContract.address, i)));
-}
+//for (let i = 0; i < 5; i++) {
+//    console.log("storage: ", BigInt(await provider.getStorageAt(asiContract.address, i)));
+//}
 const userIndex = userTree.indexOf(BigInt(userAddrs[2]));
 console.log("userIndex: ", userIndex);
 const questionIndex = questionTree.indexOf(BigInt(questions[2]));
@@ -119,6 +129,13 @@ const c = [ proof.pi_c[0],  proof.pi_c[1] ];
 
 console.log("proof generated. going to invoke the contract...");
 
-const tx = await asiContract.connect(userSigners[2]).proof(a, b, c, BigInt(2));
-const receipt = await tx.wait();
-console.log("receipt: " , receipt);
+async function logReceipt(f) {
+    const tx = await f();
+    const recipt = await tx.wait();
+    console.log("receipt: ", receipt);
+}
+//const tx = await asiContract.connect(userSigners[2]).proof(sessionId, a, b, c, BigInt(2));
+//const receipt = await tx.wait();
+//console.log("receipt: " , receipt);
+logReceipt(() => asiContract.connect(userSigners[2]).proof(sessionId, a, b, c, BigInt(2)));
+//logReceipt(() => asiContract.connect(userSigners[2]).proof(sessionId, a, b, c, BigInt(2)));
