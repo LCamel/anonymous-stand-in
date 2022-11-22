@@ -44,7 +44,7 @@ contract AnonymousStandInScript is Script {
         AnonymousStandIn asi = new AnonymousStandIn(_userTreeData.root);
         vm.stopBroadcast();
         console.log("==== deployed: ", address(asi));
-
+/*
         // register
         for (uint i = 0; i < 3; i++) {
             // generate the question for the userAddr
@@ -79,7 +79,8 @@ contract AnonymousStandInScript is Script {
             ];
 
         vm.startBroadcast(userPrivateKeys[1]);
-        asi.proof(a, b, c, 1);
+        //////////////////////////////////////////////////asi.proof(a, b, c, 1);
         vm.stopBroadcast();
+*/
     }
 }
