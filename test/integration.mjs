@@ -1,14 +1,7 @@
 import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
 import { poseidon } from "circomlibjs";
 import { Contract, ethers, Signer, Wallet } from "ethers";
-import { wtns, groth16 } from "snarkjs";
-import * as fs from "fs";
-import * as cp from "child_process";
-
-
-console.log("wtns: " , wtns);
-console.log("groth16: " , groth16);
-console.log(poseidon([1, 2]));
+import { groth16 } from "snarkjs";
 
 const userPrivKeys = [
     "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
@@ -74,7 +67,6 @@ if ((await asiContract.queryFilter(asiContract.filters.Register(), 7888888)).len
     console.log("==== skip creating events...");
 }
 
-
 const filter = asiContract.filters.Register();
 const events = await asiContract.queryFilter(filter, 7888888);
 console.log("events.length: ", events.length);
@@ -111,71 +103,21 @@ var circuitInput = {
 };
 console.log("circuitInput: ");
 console.log("%j", circuitInput);
-fs.writeFileSync("./out/input.json", JSON.stringify(circuitInput));
-console.log("done");
 
-console.log("going to invoke ./pv.sh");
-cp.execFileSync("./pv.sh");
-console.log("1111111");
-//const proof = JSON.parse(fs.readFileSync("./out/anonymous_stand_in_js/proof.json"));
-const proof = JSON.parse("[" + fs.readFileSync("./out/anonymous_stand_in_js/call_remix.txt") + "]");
-const a = proof[0];
-const b = proof[1];
-const c = proof[2];
-//console.log("proof: %j", proof);
-
-
-//const conv = (s) => "0x" + BigInt(s).toString(16);
-/*
-const conv = (s) => s;
-const a = [ conv(proof.pi_a[0]), conv(proof.pi_a[1]) ];
-const b = [[ conv(proof.pi_b[0][0]), conv(proof.pi_b[0][1]) ],
-           [ conv(proof.pi_b[1][0]), conv(proof.pi_b[1][1]) ]];
-const c = [ conv(proof.pi_c[0]), conv(proof.pi_c[1]) ];
-*/
-
-//await wtns.calculate(circuitInput, "./out/anonymous_stand_in_js/anonymous_stand_in.wasm", "./out/foo");
-
-//const proofAndPublic = await groth16.prove("./out/anonymous_stand_in_js/anonymous_stand_in_0001.zkey", "./out/foo");
-/*
-const proofAndPublic = await groth16.fullProve(circuitInput, "./out/anonymous_stand_in_js/anonymous_stand_in.wasm", "./out/anonymous_stand_in_js/anonymous_stand_in_0001.zkey");
-console.log("proof and public: ");
-console.log("%j", proofAndPublic);
+const { proof, publicSignals } = await groth16.fullProve(circuitInput, "./out/anonymous_stand_in_js/anonymous_stand_in.wasm", "./out/anonymous_stand_in_js/anonymous_stand_in_0001.zkey");
 console.log("proof: ");
-console.log("%j", proofAndPublic.proof);
-console.log("public: ");
-console.log("%j", proofAndPublic.publicSignals);
+console.log("%j", proof);
+console.log("publicSignals: ");
+console.log("%j", publicSignals);
 
-const conv = (s) => "0x" + BigInt(s).toString(16);
-const a = [ conv(proofAndPublic.proof.pi_a[0]), conv(proofAndPublic.proof.pi_a[1]) ];
-const b = [[ conv(proofAndPublic.proof.pi_b[0][0]), conv(proofAndPublic.proof.pi_b[0][1]) ],
-           [ conv(proofAndPublic.proof.pi_b[1][0]), conv(proofAndPublic.proof.pi_b[1][1]) ]];
-const c = [ conv(proofAndPublic.proof.pi_c[0]), conv(proofAndPublic.proof.pi_c[1]) ];
-*/
-/*
-const a = [
-    BigInt("0x1697a4c6035008c90dcaa170978153c55b7fcfe908460fab39801722f724f864"),
-    BigInt("0x06d1283b2739c0fd150189be13eb2c4e9b19d541ba663ac27a47827a886550a2")];
-const b = [
-    [BigInt("0x04745857281d961da592cf0e674bd720bfce15bdf256e06c821bafd11f16bd50"),
-     BigInt("0x102becf10a760dcb8835135f133471a20d66f5036c48e2a23a420694c2046e99")],
-    [BigInt("0x14293ad88aba0af2a363463e20ec918047a7c8c8d2e6e8b95d420d8443ca048f"),
-     BigInt("0x1ac410005d2fa73324ff1505b0a7af611a7d314f7a81230c4594c3b4f19f60f5")]
-    ];
-const c = [
-    BigInt("0x1a0b5d2e14612a5c7042a054e80e987f1f5e9550ad333a57dae73aab1843fae5"),
-    BigInt("0x1743824d017452e293f014821a4939780b64cdb82394d3d84a8b57661aeb4da7")];
-*/
+// https://github.com/iden3/snarkjs/blob/a483c5d3b089659964e10531c4f2e22648cf5678/src/groth16_exportsoliditycalldata.js#L37
+// beware of the order!
+const a = [ proof.pi_a[0], proof.pi_a[1] ];
+const b = [[ proof.pi_b[0][1], proof.pi_b[0][0] ],
+           [ proof.pi_b[1][1], proof.pi_b[1][0] ]];
+const c = [ proof.pi_c[0],  proof.pi_c[1] ];
 
-/*
-// this is copy/paste from the output of snarkjs
-// this is a good one
-const a = ["0x0115f6693e84fce3adcae9c5581b5b5d7f42cee2ed3c08ba6ab54f6c9e60e60c", "0x220a65f2e0a56951e8e7f900602353f260b097b4892a2dc18564e7edf4887012"];
-const b = [["0x25e4d9c326a939165434d6f47c0e1a0f8e9f7efe9ab2cea6519fe190a800307a", "0x2c0974e1331d7e270eaf96ad37136b6b857c8b9be42d739d7c3b9f1f73c4ff7c"],["0x11ad496b1e2720bc385ebce52a6b5e6e8819b66c96a3a3eef9a79a7b3bf0daa4", "0x02dbfc70a05a720f1d848c497188cb97e2588a21f053c9ee6f99db823384d33f"]];
-const c = ["0x0a611d8d664d043027d1af93500b182bbc5ba4232c7ef56337ea72b98b733488", "0x2726f7b1192f1d7fdf4dcade6bffc5402e15033a8ad3b24ea60508d51bcc667a"];
-*/
-console.log("bye");
-
+console.log("proof generated. going to invoke the contract...");
 
 const tx = await asiContract.connect(userSigners[2]).proof(a, b, c, BigInt(2));
 const receipt = await tx.wait();
