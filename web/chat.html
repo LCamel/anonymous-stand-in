@@ -1,0 +1,75 @@
+
+<script src="./bundle.js">
+// npx browserify -r circomlibjs -r @zk-kit/incremental-merkle-tree > web/bundle.js
+</script>
+
+<script>
+"use strict";
+const { poseidon } = require("circomlibjs");
+const { IncrementalMerkleTree } = require("@zk-kit/incremental-merkle-tree");
+
+//console.log("poseidon([1, 2]): ", poseidon([1, 2]));
+//const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
+//console.log("tree.root: ", tree.root);
+
+// to, from, text
+const msgs = [];
+const BOT="bot";
+
+function render(msg) {
+    //console.log(`from: ${msg.from}, to: ${msg.to}, text: ${msg.text}`);
+    const ta = document.getElementById("ta");
+    ta.value += `[${msg.from}][${msg.to||""}] ${msg.text}\n`;
+    ta.scrollTop = ta.scrollHeight;
+}
+msgs.append = (msg) => {
+    msgs.push(msg);
+    render(msg);
+    window.setTimeout(() => botOnMessage(msg), 0);
+};
+
+function keydown(e) {
+    if (e.code != 'Enter') return;
+    const t = e.target;
+    var [_, to, text] = /^(?:(\w+):\s*)?(.*)/.exec(t.value);
+    if (!to) to = BOT;
+    t.value = "";
+    msgs.append({from: t.getAttribute("id"), to, text});
+}
+var botState = { sessionId: 0, userAddresses: new Map() };
+function botOnMessage(msg) {
+    if (msg.to != BOT) return;
+    console.log("msg: ", msg);
+    var arr;
+    if (msg.text == "prepare") {
+        botState = { sessionId: Date.now(), userAddresses: new Map() };
+        console.log(botState);
+        msgs.append({from: BOT, text: `start preparing session: ${botState.sessionId}`});
+    } else if (/^add\s+(.*)/.exec(msg.text)) {
+        const userAddress = RegExp.$1;
+        botState.userAddresses.set(msg.from, userAddress);
+        msgs.append({from: BOT, text: `the address of ${msg.from} is now: ${userAddress}`});
+    } else if ("info" == msg.text) {
+        const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
+        for (const [key, value] of botState.userAddresses) {
+            tree.insert(value);
+            console.log(`key: ${key} value: ${value}`);
+        }
+        msgs.append({from: BOT, text: `root: ${tree.root}`});
+    } else {
+        msgs.append({from: BOT, to: msg.from, text: "?"});
+    }
+
+}
+</script>
+
+
+<textarea id="ta" rows="13" cols="80">
+1
+2
+3
+</textarea>
+<input type="button" value="ok" onclick="msgs.append({from:'A',to:'B',text:'blah'});"/>
+
+<input type="text" id="A" value="this is A" onkeydown="keydown(event)"/>
+<input type="text" id="B" value="this is B" onkeydown="keydown(event)"/>
