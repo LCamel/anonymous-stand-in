@@ -18,9 +18,18 @@ const BOT="bot";
 
 function render(msg) {
     //console.log(`from: ${msg.from}, to: ${msg.to}, text: ${msg.text}`);
-    const ta = document.getElementById("ta");
-    ta.value += `[${msg.from}][${msg.to||""}] ${msg.text}\n`;
-    ta.scrollTop = ta.scrollHeight;
+    //const ta = document.getElementById("ta");
+    //ta.value += `[${msg.from}][${msg.to||""}] ${msg.text}\n`;
+    //ta.scrollTop = ta.scrollHeight;
+
+    let myTable = document.getElementById('chatroom').getElementsByTagName('tbody')[0];
+    const row = myTable.insertRow(-1);
+    row.insertCell(0).innerHTML = msg.from;
+    row.insertCell(1).innerHTML = msg.text;
+
+    let wrapper = document.getElementById("wrapper");
+    wrapper.scrollTop = wrapper.scrollHeight;
+
 }
 msgs.append = (msg) => {
     msgs.push(msg);
@@ -48,14 +57,17 @@ function botOnMessage(msg) {
     } else if (/^add\s+(.*)/.exec(msg.text)) {
         const userAddress = RegExp.$1;
         botState.userAddresses.set(msg.from, userAddress);
-        msgs.append({from: BOT, text: `the address of ${msg.from} is now: ${userAddress}`});
+        msgs.append({from: BOT, text: `the address of user ${msg.from} is now: ${userAddress}`});
     } else if ("info" == msg.text) {
         const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
+        var text = "";
         for (const [key, value] of botState.userAddresses) {
+            text += key + ": " + value + "<br/>\n";
             tree.insert(value);
             console.log(`key: ${key} value: ${value}`);
         }
-        msgs.append({from: BOT, text: `root: ${tree.root}`});
+        text += `root: ${tree.root}`;
+        msgs.append({from: BOT, text});
     } else {
         msgs.append({from: BOT, to: msg.from, text: "?"});
     }
@@ -63,13 +75,36 @@ function botOnMessage(msg) {
 }
 </script>
 
-
+<!--
 <textarea id="ta" rows="13" cols="80">
 1
 2
 3
 </textarea>
 <input type="button" value="ok" onclick="msgs.append({from:'A',to:'B',text:'blah'});"/>
+-->
 
+
+<style>
+#chatroom {
+    width: 100%;
+}
+#chatroom td {
+    border: 1px solid black;
+}
+#chatroom td:nth-child(1) {
+    width: 100px;
+}
+#wrapper {
+    overflow: scroll;
+    height: 70%
+}
+</style>
+<div id="wrapper">
+<table id="chatroom">
+    <tbody>
+    </tbody>
+</table>
+</div>
 <input type="text" id="A" value="this is A" onkeydown="keydown(event)"/>
 <input type="text" id="B" value="this is B" onkeydown="keydown(event)"/>
