@@ -1,13 +1,15 @@
 
 <script src="./bundle.js">
-// npx browserify -r circomlibjs -r @zk-kit/incremental-merkle-tree > web/bundle.js
+// npx browserify -r circomlibjs -r @zk-kit/incremental-merkle-tree -r ethers > web/bundle.js
 </script>
 
 <script>
 "use strict";
 const { poseidon } = require("circomlibjs");
 const { IncrementalMerkleTree } = require("@zk-kit/incremental-merkle-tree");
+const { Contract, ethers, Signer, Wallet } = require("ethers");
 
+console.log("ethers: ", ethers);
 //console.log("poseidon([1, 2]): ", poseidon([1, 2]));
 //const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
 //console.log("tree.root: ", tree.root);
@@ -26,6 +28,7 @@ function render(msg) {
     const row = myTable.insertRow(-1);
     row.insertCell(0).innerHTML = msg.from;
     row.insertCell(1).innerHTML = msg.text;
+    if (msg.from == BOT) row.style.backgroundColor = "#f8f8f8";
 
     let wrapper = document.getElementById("wrapper");
     wrapper.scrollTop = wrapper.scrollHeight;
@@ -45,7 +48,15 @@ function keydown(e) {
     t.value = "";
     msgs.append({from: t.getAttribute("id"), to, text});
 }
+function computeRoot(map) {
+    const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
+    for (const [key, value] of map) {
+        tree.insert(value);
+    }
+    return tree.root;
+}
 var botState = { sessionId: 0, userAddresses: new Map() };
+
 function botOnMessage(msg) {
     if (msg.to != BOT) return;
     console.log("msg: ", msg);
@@ -59,18 +70,59 @@ function botOnMessage(msg) {
         botState.userAddresses.set(msg.from, userAddress);
         msgs.append({from: BOT, text: `the address of user ${msg.from} is now: ${userAddress}`});
     } else if ("info" == msg.text) {
-        const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
         var text = "";
         for (const [key, value] of botState.userAddresses) {
             text += key + ": " + value + "<br/>\n";
-            tree.insert(value);
-            console.log(`key: ${key} value: ${value}`);
         }
-        text += `root: ${tree.root}`;
+        text += `root: ${computeRoot(botState.userAddress)}`;
         msgs.append({from: BOT, text});
     } else {
         msgs.append({from: BOT, to: msg.from, text: "?"});
     }
+
+}
+const userPrivKeys = [
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+    "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+    "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
+    "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a",
+    ];
+const provider = new ethers.providers.JsonRpcProvider(); // local
+const userSigners = userPrivKeys.map((key) => new Wallet(key, provider));
+const asiContract = new Contract(
+    "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98",
+    [
+        "event Register(uint indexed sessionId, uint question, address standIn)",
+        "event Proof(uint indexed sessionId, address user)",
+        "error SessionDoesNotExistError()",
+        "error AlreadyProofedError()",
+        "error VerificationError()",
+        "function createSession(uint sessionId, uint userTreeRoot) public",
+        "function getUserTreeRoot(uint sessionId) public view returns (uint)",
+        "function getQuestionTreeRoot(uint sessionId) public view returns (uint)",
+        "function register(uint sessionId, uint question) public",
+        "function proof(uint sessionId, uint[2] memory a, uint[2][2] memory b, uint[2] memory c, uint userIndex) public returns (bool r)",
+    ],
+    provider
+    );
+
+async function f() {
+    console.log("ok");
+    //const provider = new ethers.providers.Web3Provider(window.ethereum);
+    //console.log("provider: " , provider);
+
+    // for demo: get the list directly from the botState
+    const root = computeRoot(botState.userAddresses);
+    const tx = await asiContract.connect(userSigners[1]).createSession(
+        botState.sessionId, computeRoot(botState.userAddresses));
+    const receipt = await tx.wait();
+    console.log("createSession: ", receipt);
+
+
+
+    msgs.append({from: "B", to: BOT, text: "created"});
+
 
 }
 </script>
@@ -88,9 +140,10 @@ function botOnMessage(msg) {
 <style>
 #chatroom {
     width: 100%;
+    font-family: 'Courier New', monospace;
 }
 #chatroom td {
-    border: 1px solid black;
+    /* border: 1px solid black; */
 }
 #chatroom td:nth-child(1) {
     width: 100px;
@@ -108,3 +161,4 @@ function botOnMessage(msg) {
 </div>
 <input type="text" id="A" value="this is A" onkeydown="keydown(event)"/>
 <input type="text" id="B" value="this is B" onkeydown="keydown(event)"/>
+<input type="button" value="create with B" onclick="f()"/>
