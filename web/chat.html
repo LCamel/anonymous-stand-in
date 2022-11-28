@@ -7,32 +7,28 @@
 "use strict";
 const { poseidon } = require("circomlibjs");
 const { IncrementalMerkleTree } = require("@zk-kit/incremental-merkle-tree");
-const { Contract, ethers, Signer, Wallet } = require("ethers");
 
-console.log("ethers: ", ethers);
-//console.log("poseidon([1, 2]): ", poseidon([1, 2]));
-//const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
-//console.log("tree.root: ", tree.root);
+const userAddrs = {
+    A: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    B: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+    C: "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
+    D: "0x90f79bf6eb2c4f870365e785982e1f101e93b906",
+    E: "0x15d34aaf54267db7d7c367839aaf71a00a2c6a65",
+};
 
 // to, from, text
 const msgs = [];
 const BOT="bot";
 
 function render(msg) {
-    //console.log(`from: ${msg.from}, to: ${msg.to}, text: ${msg.text}`);
-    //const ta = document.getElementById("ta");
-    //ta.value += `[${msg.from}][${msg.to||""}] ${msg.text}\n`;
-    //ta.scrollTop = ta.scrollHeight;
-
     let myTable = document.getElementById('chatroom').getElementsByTagName('tbody')[0];
     const row = myTable.insertRow(-1);
     row.insertCell(0).innerHTML = msg.from;
-    row.insertCell(1).innerHTML = msg.text;
-    if (msg.from == BOT) row.style.backgroundColor = "#f8f8f8";
+    row.insertCell(1).innerHTML = (msg.to ? msg.to + ": " : "") + msg.text;
+    if (msg.from == BOT) row.style.backgroundColor = "#eeeeee";
 
     let wrapper = document.getElementById("wrapper");
     wrapper.scrollTop = wrapper.scrollHeight;
-
 }
 msgs.append = (msg) => {
     msgs.push(msg);
@@ -41,12 +37,19 @@ msgs.append = (msg) => {
 };
 
 function keydown(e) {
-    if (e.code != 'Enter') return;
-    const t = e.target;
-    var [_, to, text] = /^(?:(\w+):\s*)?(.*)/.exec(t.value);
-    if (!to) to = BOT;
-    t.value = "";
-    msgs.append({from: t.getAttribute("id"), to, text});
+    if (e.code == 'Space') {
+        const t = e.target;
+        if (/(.*)\$addr$/.exec(t.value)) {
+            const addr = userAddrs[t.getAttribute("id")];
+            t.value = RegExp.$1 + addr;
+            e.preventDefault();
+        }
+    } else if (e.code == 'Enter') {
+        const t = e.target;
+        var [_, to, text] = /^(?:(\w+):\s*)?(.*)/.exec(t.value);
+        t.value = "";
+        msgs.append({from: t.getAttribute("id"), to, text});
+    }
 }
 function computeRoot(map) {
     const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
@@ -55,6 +58,7 @@ function computeRoot(map) {
     }
     return tree.root;
 }
+
 var botState = { sessionId: 0, userAddresses: new Map() };
 
 function botOnMessage(msg) {
@@ -65,7 +69,7 @@ function botOnMessage(msg) {
         botState = { sessionId: Date.now(), userAddresses: new Map() };
         console.log(botState);
         msgs.append({from: BOT, text: `start preparing a session: ${botState.sessionId}`});
-    } else if (/^add\s+(.*)/.exec(msg.text)) {
+    } else if (/^add\s+(\w+)/.exec(msg.text)) {
         const userAddress = RegExp.$1;
         botState.userAddresses.set(msg.from, userAddress);
         msgs.append({from: BOT, text: `the address of user ${msg.from} is now: ${userAddress}`});
@@ -79,51 +83,6 @@ function botOnMessage(msg) {
     } else {
         msgs.append({from: BOT, to: msg.from, text: "?"});
     }
-
-}
-const userPrivKeys = [
-    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-    "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
-    "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
-    "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
-    "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a",
-    ];
-const provider = new ethers.providers.JsonRpcProvider(); // local
-const userSigners = userPrivKeys.map((key) => new Wallet(key, provider));
-const asiContract = new Contract(
-    "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98",
-    [
-        "event Register(uint indexed sessionId, uint question, address standIn)",
-        "event Proof(uint indexed sessionId, address user)",
-        "error SessionDoesNotExistError()",
-        "error AlreadyProofedError()",
-        "error VerificationError()",
-        "function createSession(uint sessionId, uint userTreeRoot) public",
-        "function getUserTreeRoot(uint sessionId) public view returns (uint)",
-        "function getQuestionTreeRoot(uint sessionId) public view returns (uint)",
-        "function register(uint sessionId, uint question) public",
-        "function proof(uint sessionId, uint[2] memory a, uint[2][2] memory b, uint[2] memory c, uint userIndex) public returns (bool r)",
-    ],
-    provider
-    );
-
-async function f() {
-    msgs.append({from: "B", to: "all", text: "I'm going to create the session."});
-    //const provider = new ethers.providers.Web3Provider(window.ethereum);
-    //console.log("provider: " , provider);
-
-    // for demo: get the list directly from the botState
-    const root = computeRoot(botState.userAddresses);
-    const tx = await asiContract.connect(userSigners[1])
-        .createSession(botState.sessionId, computeRoot(botState.userAddresses));
-    const receipt = await tx.wait();
-    console.log("createSession: ", receipt);
-
-
-
-    msgs.append({from: "B", to: "all", text: "Session created. Don't trust. Verify."});
-
-
 }
 </script>
 
@@ -153,6 +112,6 @@ async function f() {
     </tbody>
 </table>
 </div>
-A: <input type="text" id="A" value="this is A" onkeydown="keydown(event)"/><br/>
-B: <input type="text" id="B" value="this is B" onkeydown="keydown(event)"/><br/>
-<input type="button" value="create with B" onclick="f()"/>
+A: <input type="text" id="A" value="this is A" size="60" onkeydown="keydown(event)"/><br/>
+B: <input type="text" id="B" value="this is B" size="60" onkeydown="keydown(event)"/><br/>
+C: <input type="text" id="C" value="this is C" size="60" onkeydown="keydown(event)"/><br/>
