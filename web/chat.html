@@ -74,7 +74,7 @@ function botOnMessage(msg) {
         for (const [key, value] of botState.userAddresses) {
             text += key + ": " + value + "<br/>\n";
         }
-        text += `root: ${computeRoot(botState.userAddress)}`;
+        text += `root: ${computeRoot(botState.userAddresses)}`;
         msgs.append({from: BOT, text});
     } else {
         msgs.append({from: BOT, to: msg.from, text: "?"});
@@ -127,26 +127,18 @@ async function f() {
 }
 </script>
 
-<!--
-<textarea id="ta" rows="13" cols="80">
-1
-2
-3
-</textarea>
-<input type="button" value="ok" onclick="msgs.append({from:'A',to:'B',text:'blah'});"/>
--->
-
 
 <style>
 #chatroom {
     width: 100%;
     font-family: 'Courier New', monospace;
-}
-#chatroom td {
-    /* border: 1px solid black; */
+    font-weight: bold;
+    table-layout: fixed;
+    word-wrap:break-word
 }
 #chatroom td:nth-child(1) {
-    width: 100px;
+    width: 4em;
+    vertical-align: top;
 }
 #wrapper {
     overflow: scroll;
