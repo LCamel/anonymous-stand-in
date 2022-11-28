@@ -1,0 +1,142 @@
+
+<script src="./bundle.js">
+// npx browserify -r circomlibjs -r @zk-kit/incremental-merkle-tree -r ethers > web/bundle.js
+</script>
+
+<script>
+"use strict";
+const { poseidon } = require("circomlibjs");
+const { IncrementalMerkleTree } = require("@zk-kit/incremental-merkle-tree");
+const { Contract, ethers, Signer, Wallet } = require("ethers");
+
+function computeRoot(map) {
+    const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
+    for (const [key, value] of map) {
+        tree.insert(value);
+    }
+    return tree.root;
+}
+var botState = { sessionId: 0, userAddresses: new Map() };
+
+const userPrivKeys = [
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+    "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+    "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
+    "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a",
+    ];
+const provider = new ethers.providers.JsonRpcProvider(); // local
+const userSigners = userPrivKeys.map((key) => new Wallet(key, provider));
+const asiContract = new Contract(
+    "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98",
+    [
+        "event Register(uint indexed sessionId, uint question, address standIn)",
+        "event Proof(uint indexed sessionId, address user)",
+        "error SessionDoesNotExistError()",
+        "error AlreadyProofedError()",
+        "error VerificationError()",
+        "function createSession(uint sessionId, uint userTreeRoot) public",
+        "function getUserTreeRoot(uint sessionId) public view returns (uint)",
+        "function getQuestionTreeRoot(uint sessionId) public view returns (uint)",
+        "function register(uint sessionId, uint question) public",
+        "function proof(uint sessionId, uint[2] memory a, uint[2][2] memory b, uint[2] memory c, uint userIndex) public returns (bool r)",
+    ],
+    provider
+    );
+
+async function f() {
+    console.log("creating session...")
+    const str = document.getElementById("ta").value;
+    const session = verifyContent(str);
+    console.log("========");
+    console.log(session);
+    console.log("========");
+    const tx = await asiContract.connect(userSigners[1])
+        .createSession(session.sessionId, session.root);
+    const receipt = await tx.wait();
+    console.log("createSession: ", receipt);
+
+
+
+
+
+
+}
+// https://stackoverflow.com/a/69132762
+(()=>{
+  const console_log = window.console.log;
+  window.console.log = function(...args){
+    console_log(...args);
+    var textarea = document.getElementById('console_ta');
+    if(!textarea) return;
+    if (args.length == 1 && typeof(args[0]) == 'string') {
+        textarea.value += args[0] + "\n";
+    } else {
+        args.forEach(arg=>textarea.value += `${JSON.stringify(arg)}\n`);
+    }
+    textarea.scrollTop = textarea.scrollHeight;
+  }
+})();
+function parseContent(str) {
+    const session = { sessionId: undefined, userAddresses: new Map(), root: undefined };
+    const regexp = /^(\w+): (.*)/gm;
+    let match;
+    while ((match = regexp.exec(str)) !== null) {
+        const [k, v] = [match[1], match[2]];
+        if (k == "sessionId") {
+            session.sessionId = v;
+        } else if (k == "root") {
+            session.root = v;
+        } else {
+            session.userAddresses.set(k, v);
+        }
+    }
+    return session;
+}
+function verifyContent(str) {
+    const session = parseContent(str);
+    console.log("the root from the text: " + session.root);
+    const root = computeRoot(session.userAddresses);
+    console.log("computed root: " + root);
+    if (root != session.root) {
+        console.log("\nTwo roots don't match!!");
+        return undefined;
+    } else {
+        console.log("\nOK");
+        return session;
+    }
+}
+</script>
+
+
+<style>
+* {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+}
+#chatroom {
+    width: 100%;
+    table-layout: fixed;
+    word-wrap:break-word
+}
+#chatroom td:nth-child(1) {
+    width: 4em;
+    vertical-align: top;
+}
+#wrapper {
+    overflow: scroll;
+    height: 70%
+}
+</style>
+<textarea id="ta" rows="13" cols="80">
+sessionId: 1669605640207
+B: 5
+A: 3
+root: 17924265954136237964638997409782770027260372743630232336430483870863275323287
+</textarea>
+
+<input type="button" value="verify content" onclick="verifyContent(document.getElementById('ta').value)"/>
+<input type="button" value="create with B" onclick="f()"/>
+
+<textarea id="console_ta" rows="13" cols="80">
+</textarea>

@@ -64,13 +64,13 @@ function botOnMessage(msg) {
     if (msg.text == "prepare") {
         botState = { sessionId: Date.now(), userAddresses: new Map() };
         console.log(botState);
-        msgs.append({from: BOT, text: `start preparing session: ${botState.sessionId}`});
+        msgs.append({from: BOT, text: `start preparing a session: ${botState.sessionId}`});
     } else if (/^add\s+(.*)/.exec(msg.text)) {
         const userAddress = RegExp.$1;
         botState.userAddresses.set(msg.from, userAddress);
         msgs.append({from: BOT, text: `the address of user ${msg.from} is now: ${userAddress}`});
     } else if ("info" == msg.text) {
-        var text = "";
+        var text = `sessionId: ${botState.sessionId} <br/>\n`;
         for (const [key, value] of botState.userAddresses) {
             text += key + ": " + value + "<br/>\n";
         }
@@ -108,20 +108,20 @@ const asiContract = new Contract(
     );
 
 async function f() {
-    console.log("ok");
+    msgs.append({from: "B", to: "all", text: "I'm going to create the session."});
     //const provider = new ethers.providers.Web3Provider(window.ethereum);
     //console.log("provider: " , provider);
 
     // for demo: get the list directly from the botState
     const root = computeRoot(botState.userAddresses);
-    const tx = await asiContract.connect(userSigners[1]).createSession(
-        botState.sessionId, computeRoot(botState.userAddresses));
+    const tx = await asiContract.connect(userSigners[1])
+        .createSession(botState.sessionId, computeRoot(botState.userAddresses));
     const receipt = await tx.wait();
     console.log("createSession: ", receipt);
 
 
 
-    msgs.append({from: "B", to: BOT, text: "created"});
+    msgs.append({from: "B", to: "all", text: "Session created. Don't trust. Verify."});
 
 
 }
@@ -129,10 +129,12 @@ async function f() {
 
 
 <style>
-#chatroom {
-    width: 100%;
+* {
     font-family: 'Courier New', monospace;
     font-weight: bold;
+}
+#chatroom {
+    width: 100%;
     table-layout: fixed;
     word-wrap:break-word
 }
@@ -151,6 +153,6 @@ async function f() {
     </tbody>
 </table>
 </div>
-<input type="text" id="A" value="this is A" onkeydown="keydown(event)"/>
-<input type="text" id="B" value="this is B" onkeydown="keydown(event)"/>
+A: <input type="text" id="A" value="this is A" onkeydown="keydown(event)"/><br/>
+B: <input type="text" id="B" value="this is B" onkeydown="keydown(event)"/><br/>
 <input type="button" value="create with B" onclick="f()"/>
