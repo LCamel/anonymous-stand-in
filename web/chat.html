@@ -78,7 +78,7 @@ function botOnMessage(msg) {
         for (const [key, value] of botState.userAddresses) {
             text += key + ": " + value + "<br/>\n";
         }
-        text += `root: ${computeRoot(botState.userAddresses)}`;
+        text += `root: 0x${computeRoot(botState.userAddresses).toString(16)}`;
         msgs.append({from: BOT, text});
     } else {
         msgs.append({from: BOT, to: msg.from, text: "?"});
