@@ -7,7 +7,7 @@
 "use strict";
 const { poseidon } = require("circomlibjs");
 const { IncrementalMerkleTree } = require("@zk-kit/incremental-merkle-tree");
-const { Contract, ethers, Signer, Wallet } = require("ethers");
+const { Contract, ethers, Signer, Wallet, BigNumber } = require("ethers");
 
 function computeRoot(map) {
     const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
@@ -25,6 +25,14 @@ const userPrivKeys = [
     "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
     "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a",
     ];
+const asiPrivKeys = [
+    "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba",
+    "0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e",
+    "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356",
+    "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97",
+    "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6",
+    ];
+
 const provider = new ethers.providers.JsonRpcProvider(); // local
 const userSigners = userPrivKeys.map((key) => new Wallet(key, provider));
 const asiContract = new Contract(
@@ -43,6 +51,7 @@ const asiContract = new Contract(
     ],
     provider
     );
+const userAddrs = userPrivKeys.map((key) => ethers.utils.computeAddress(key));
 
 async function f() {
     console.log("creating session...")
@@ -87,17 +96,54 @@ function parseContent(str) {
     }
     return session;
 }
+function eq(a, b) {
+    return BigNumber.from(a).eq(BigNumber.from(b));
+}
+function toHex(a) {
+    return BigNumber.from(a).toHexString();
+}
 function verifyContent(str) {
     const session = parseContent(str);
-    console.log("the root from the text: " + session.root);
+    console.log("the root from the text:\n" + toHex(session.root));
+
     const root = computeRoot(session.userAddresses);
-    console.log("computed root: 0x" + root.toString(16));
-    if (root != session.root) {
-        console.log("\nTwo roots don't match!!");
+    console.log("computed root:\n" + toHex(root));
+
+    if (! eq(session.root, root)) {
+        console.log("Two roots don't match!!");
         return undefined;
     } else {
-        console.log("\nOK");
+        console.log("Content OK");
         return session;
+    }
+}
+async function verifyWithTheContract(str) {
+    const session = verifyContent(str);
+    const userTreeRoot = await asiContract.getUserTreeRoot(session.sessionId);
+    console.log("The user tree root from the contract:\n" + toHex(userTreeRoot));
+    if (! eq(session.root, userTreeRoot)) {
+        console.log("Two roots don't match!!");
+    } else {
+        console.log("Two user tree roots do match.");
+    }
+}
+async function register() {
+    try {
+    const userIndex = 1; // B / b
+
+    const session = verifyContent(document.getElementById('ta').value);
+    console.log("sessionId: " + session.sessionId);
+    const secret = document.getElementById('secret').value;
+    console.log("secret: " + secret);
+    const addr = userAddrs[userIndex];
+    const question = poseidon([addr, secret]);
+    console.log(`addr: ${addr} secret: ${secret} question: ${question}`);
+
+    const tx = await asiContract.connect(userSigners[userIndex]).register(session.sessionId, question);
+    const receipt = await tx.wait();
+    console.log("register: ", receipt);
+    } catch (ex) {
+        console.log(ex.stack);
     }
 }
 </script>
@@ -129,8 +175,15 @@ A: 3
 root: 17924265954136237964638997409782770027260372743630232336430483870863275323287
 </textarea>
 
-<input type="button" value="verify content" onclick="verifyContent(document.getElementById('ta').value)"/>
-<input type="button" value="create with B" onclick="f()"/>
+<br/>
+<input type="button" value="Verify content" onclick="verifyContent(document.getElementById('ta').value)"/>
+<input type="button" value="Verify with the contract" onclick="verifyWithTheContract(document.getElementById('ta').value)"/><br/>
+
+<input type="button" value="Create with B" onclick="f()"/>
+<input type="button" value="Register with b" onclick="register()"/>
+<input type="text" id="secret" value="secret here"/>
+<input type="button" value="Proof with B" onclick="proof()"/>
+<br/>
 
 <textarea id="console_ta" rows="13" cols="80">
 </textarea>
