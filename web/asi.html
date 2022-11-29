@@ -53,7 +53,7 @@ const asiContract = new Contract(
     );
 const userAddrs = userPrivKeys.map((key) => ethers.utils.computeAddress(key));
 
-async function f() {
+async function create() {
     console.log("creating session...")
     const str = document.getElementById("ta").value;
     const session = verifyContent(str);
@@ -168,7 +168,7 @@ async function register() {
     height: 70%
 }
 </style>
-<textarea id="ta" rows="13" cols="80">
+<textarea id="ta" rows="13" style="width: 100%">
 sessionId: 1669605640207
 B: 5
 A: 3
@@ -177,13 +177,15 @@ root: 17924265954136237964638997409782770027260372743630232336430483870863275323
 
 <br/>
 <input type="button" value="Verify content" onclick="verifyContent(document.getElementById('ta').value)"/>
+<br/>
+<input type="button" value="Create with B" onclick="create()"/>
+<br/>
 <input type="button" value="Verify with the contract" onclick="verifyWithTheContract(document.getElementById('ta').value)"/><br/>
 
-<input type="button" value="Create with B" onclick="f()"/>
 <input type="button" value="Register with b" onclick="register()"/>
 <input type="text" id="secret" value="secret here"/>
 <input type="button" value="Proof with B" onclick="proof()"/>
 <br/>
 
-<textarea id="console_ta" rows="13" cols="80">
+<textarea id="console_ta" rows="13" style="width: 100%">
 </textarea>
