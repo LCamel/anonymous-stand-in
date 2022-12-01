@@ -8,15 +8,8 @@
 const { poseidon } = require("circomlibjs");
 const { IncrementalMerkleTree } = require("@zk-kit/incremental-merkle-tree");
 const { Contract, ethers, Signer, Wallet, BigNumber } = require("ethers");
+const { getOpinionatedSecret, getTree } = require("asi");
 
-function computeRoot(map) {
-    const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
-    for (const [key, value] of map) {
-        tree.insert(value);
-    }
-    return tree.root;
-}
-var botState = { sessionId: 0, userAddresses: new Map() };
 
 const userPrivKeys = [
     "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
@@ -106,7 +99,7 @@ function verifyContent(str) {
     const session = parseContent(str);
     console.log("the root from the text:\n" + toHex(session.root));
 
-    const root = computeRoot(session.userAddresses);
+    const root = getTree(session.userAddresses.values()).root;
     console.log("computed root:\n" + toHex(root));
 
     if (! eq(session.root, root)) {
@@ -146,6 +139,7 @@ async function register() {
         console.log(ex.stack);
     }
 }
+
 </script>
 
 
