@@ -5,10 +5,8 @@
 
 <script>
 "use strict";
-const { poseidon } = require("circomlibjs");
-const { IncrementalMerkleTree } = require("@zk-kit/incremental-merkle-tree");
 const { Contract, ethers, Signer, Wallet, BigNumber } = require("ethers");
-const { getOpinionatedSecret, getTree } = require("asi");
+const { getOpinionatedSecret, getQuestion, getTree, generateProof, getRegisterEvents, extractQuestions } = require("asi");
 
 
 const userPrivKeys = [
@@ -28,6 +26,7 @@ const asiPrivKeys = [
 
 const provider = new ethers.providers.JsonRpcProvider(); // local
 const userSigners = userPrivKeys.map((key) => new Wallet(key, provider));
+const asiSigners = asiPrivKeys.map((key) => new Wallet(key, provider));
 const asiContract = new Contract(
     "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98",
     [
@@ -126,18 +125,45 @@ async function register() {
 
     const session = verifyContent(document.getElementById('ta').value);
     console.log("sessionId: " + session.sessionId);
-    const secret = document.getElementById('secret').value;
-    console.log("secret: " + secret);
-    const addr = userAddrs[userIndex];
-    const question = poseidon([addr, secret]);
-    console.log(`addr: ${addr} secret: ${secret} question: ${question}`);
+    //const secret = document.getElementById('secret').value;
+    //console.log("secret: " + secret);
+    const userAddr = userAddrs[userIndex];
+    const secret = await getOpinionatedSecret(asiSigners[userIndex], session.sessionId);
+    const question = getQuestion(userAddr, secret);
+    console.log(`userAddr: ${userAddr} secret: ${secret} question: ${question}`);
 
-    const tx = await asiContract.connect(userSigners[userIndex]).register(session.sessionId, question);
+    const tx = await asiContract.connect(asiSigners[userIndex]).register(session.sessionId, question);
     const receipt = await tx.wait();
     console.log("register: ", receipt);
     } catch (ex) {
         console.log(ex.stack);
     }
+}
+
+async function proof() {
+    const userIndex = 1; // B / b
+
+    const session = verifyContent(document.getElementById('ta').value);
+    const userAddr = userAddrs[userIndex];
+    const secret = await getOpinionatedSecret(asiSigners[userIndex], session.sessionId);
+    const questions = await
+        getRegisterEvents(provider, "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98", 7888888, session.sessionId)
+        .then(extractQuestions);
+    // function generateProof(userAddr, userAddrs, secret, questions, wasm, zkey) {
+    console.log("userAddr: " + userAddr);
+    console.log("session.userAddresses.values(): " + session.userAddresses.values());
+    const { proof, publicSignals } = await generateProof(userAddr, session.userAddresses.values(), secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
+    console.log(proof);
+
+    const a = [ proof.pi_a[0], proof.pi_a[1] ];
+    const b = [[ proof.pi_b[0][1], proof.pi_b[0][0] ],
+               [ proof.pi_b[1][1], proof.pi_b[1][0] ]];
+    const c = [ proof.pi_c[0],  proof.pi_c[1] ];
+
+    const tx = await asiContract.connect(userSigners[userIndex])
+        .proof(session.sessionId, a, b, c, publicSignals[1]);
+    const receipt = await tx.wait();
+    console.log("proof: ", receipt);
 }
 
 </script>
@@ -163,10 +189,11 @@ async function register() {
 }
 </style>
 <textarea id="ta" rows="13" style="width: 100%">
-sessionId: 1669605640207
-B: 5
-A: 3
-root: 17924265954136237964638997409782770027260372743630232336430483870863275323287
+sessionId: 1669894878858
+A: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+C: 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc
+B: 0x70997970c51812dc3a010c7d01b50e0d17dc79c8
+root: 0x1722af19a1e0f6cf7a952c467c2bc0b19de758301f665107cdd19b60bc3ba027
 </textarea>
 
 <br/>
