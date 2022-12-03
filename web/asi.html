@@ -71,22 +71,6 @@ async function create() {
     textarea.scrollTop = textarea.scrollHeight;
   }
 })();
-function parseContent(str) {
-    const session = { sessionId: undefined, userAddresses: new Map(), root: undefined };
-    const regexp = /^(\w+): (.*)/gm;
-    let match;
-    while ((match = regexp.exec(str)) !== null) {
-        const [k, v] = [match[1], match[2]];
-        if (k == "sessionId") {
-            session.sessionId = v;
-        } else if (k == "root") {
-            session.root = v;
-        } else {
-            session.userAddresses.set(k, v);
-        }
-    }
-    return session;
-}
 function eq(a, b) {
     return BigNumber.from(a).eq(BigNumber.from(b));
 }
