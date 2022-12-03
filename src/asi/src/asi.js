@@ -34,12 +34,39 @@ class ASI {
         this.userSigner = userSigner;
         this.asiSigner = asiSigner;
     }
+    getUserSigner() {
+        return this.userSigner;
+    }
+    getAsiSigner() {
+        return this.asiSigner;
+    }
+    // Promise
+    getUserAddress() {
+        return this.userSigner.getAddress();
+    }
+    getSessionId() {
+        return this.sessionId;
+    }
     // promise of tx
     createSession(sessionId, userTreeRoot) {
+        this.setSession(sessionId, userTreeRoot); // TODO: error handling
         return this.contract.createSession(sessionId, userTreeRoot);
     }
+    // interact with an existing session
+    setSession(sessionId, userTreeRoot) {
+        this.sessionId = BigInt(sessionId);
+        this.userTreeRoot = BigInt(userTreeRoot);
+    }
+
     getUserTreeRoot(sessionId) {
         return this.contract.getUserTreeRoot(sessionId);
+    }
+    getOpinionatedSecret() {
+        return this.asiSigner.signMessage(this.sessionId.toString())
+            .then(s => BigInt(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(s))));
+    }
+    register(question) {
+        return this.contract.connect(this.asiSigner).register(this.sessionId, question);
     }
     /*
     getRegisterEvents(sessionId)

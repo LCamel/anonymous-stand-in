@@ -47,7 +47,9 @@ const userAddrs = userPrivKeys.map((key) => ethers.utils.computeAddress(key));
 const asi = new ASI(ASI.TEMP_ADDR, userSigners[1], asiSigners[1]);
 
 function parse() {
-    return SessionInfo.parse(document.getElementById("ta").value);
+    const sessionInfo = SessionInfo.parse(document.getElementById("ta").value);
+    asi.setSession(sessionInfo.sessionId, sessionInfo.getUserTreeRoot());
+    return sessionInfo;
 }
 
 async function create() {
@@ -91,18 +93,14 @@ async function verifyWithTheContract() {
 }
 async function register() {
     try {
-    const userIndex = 1; // B / b
-
-    const session = verifyContent(document.getElementById('ta').value);
-    console.log("sessionId: " + session.sessionId);
-    //const secret = document.getElementById('secret').value;
-    //console.log("secret: " + secret);
-    const userAddr = userAddrs[userIndex];
-    const secret = await getOpinionatedSecret(asiSigners[userIndex], session.sessionId);
+    const sessionInfo = parse();
+    console.log("sessionId: " + sessionInfo.sessionId);
+    const userAddr = await asi.getUserAddress();
+    const secret = await asi.getOpinionatedSecret();
     const question = getQuestion(userAddr, secret);
     console.log(`userAddr: ${userAddr} secret: ${secret} question: ${question}`);
 
-    const tx = await asiContract.connect(asiSigners[userIndex]).register(session.sessionId, question);
+    const tx = await asi.register(question);
     const receipt = await tx.wait();
     console.log("register: ", receipt);
     } catch (ex) {
