@@ -6,7 +6,7 @@
 <script>
 "use strict";
 const { Contract, ethers, Signer, Wallet, BigNumber } = require("ethers");
-const { getOpinionatedSecret, getQuestion, getTree, generateProof, getRegisterEvents, extractQuestions } = require("asi");
+const { getOpinionatedSecret, getQuestion, getTree, generateProof, getRegisterEvents, extractQuestions, SessionInfo } = require("asi");
 
 
 const userPrivKeys = [
@@ -45,15 +45,14 @@ const asiContract = new Contract(
     );
 const userAddrs = userPrivKeys.map((key) => ethers.utils.computeAddress(key));
 
+function parse() {
+    return SessionInfo.parse(document.getElementById("ta").value);
+}
 async function create() {
     console.log("creating session...")
-    const str = document.getElementById("ta").value;
-    const session = verifyContent(str);
-    console.log("========");
-    console.log(session);
-    console.log("========");
+    const sessionInfo = SessionInfo.parse(document.getElementById("ta").value);
     const tx = await asiContract.connect(userSigners[1])
-        .createSession(session.sessionId, session.root);
+        .createSession(sessionInfo.sessionId, sessionInfo.getUserRoot());
     const receipt = await tx.wait();
     console.log("createSession: ", receipt);
 }
@@ -94,21 +93,7 @@ function eq(a, b) {
 function toHex(a) {
     return BigNumber.from(a).toHexString();
 }
-function verifyContent(str) {
-    const session = parseContent(str);
-    console.log("the root from the text:\n" + toHex(session.root));
 
-    const root = getTree(session.userAddresses.values()).root;
-    console.log("computed root:\n" + toHex(root));
-
-    if (! eq(session.root, root)) {
-        console.log("Two roots don't match!!");
-        return undefined;
-    } else {
-        console.log("Content OK");
-        return session;
-    }
-}
 async function verifyWithTheContract(str) {
     const session = verifyContent(str);
     const userTreeRoot = await asiContract.getUserTreeRoot(session.sessionId);
@@ -189,15 +174,22 @@ async function proof() {
 }
 </style>
 <textarea id="ta" rows="13" style="width: 100%">
-sessionId: 1669894878858
-A: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
-C: 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc
-B: 0x70997970c51812dc3a010c7d01b50e0d17dc79c8
-root: 0x1722af19a1e0f6cf7a952c467c2bc0b19de758301f665107cdd19b60bc3ba027
+{
+    "sessionId": "0x323e2f9e07db0fc7423d9f978d3597b7074fda78e4f74d2cea261d468c7731a5",
+    "users": [
+        [ "B",
+          "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" ],
+        [ "C",
+          "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC" ],
+        [ "A",
+          "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" ]
+    ],
+    "root": "0x1839a18dfd8c995979d539fede89d2edc9f0b671c549e5f735afe5f82ab7b734"
+}
 </textarea>
 
 <br/>
-<input type="button" value="Verify content" onclick="verifyContent(document.getElementById('ta').value)"/>
+<input type="button" value="Verify content" onclick="parse(); console.log('OK')"/>
 <br/>
 <input type="button" value="Create with B" onclick="create()"/>
 <br/>

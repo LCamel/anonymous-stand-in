@@ -36,12 +36,29 @@ class SessionInfo {
             .replaceAll(/^(            )"/gm, '          "')
             .replaceAll(/"\n        /g, '" ');
     }
+    static parse(s) {
+        const json = JSON.parse(s);
+        const si = new SessionInfo(json.sessionId);
+        json.users.forEach(([id, addr]) => {
+            si.add(id, addr);
+        });
+        if (BigInt(json.root) != si.getUserRoot()) {
+            throw "root mismatch: " + BigInt(json.root) + " " + si.getUserRoot();
+        }
+        return si;
+    }
 }
+
+export { SessionInfo };
 
 /*
 var si = new SessionInfo();
 si.add("B", "0x70997970c51812dc3a010c7d01b50e0d17dc79c8");
 si.add("C", "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc");
 si.add("A", "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266");
-console.log(si.stringify());
+const s = si.stringify();
+console.log(s);
+
+var si2 = SessionInfo.parse(s);
+console.log(si2.stringify());
 */
