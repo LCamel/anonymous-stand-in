@@ -6,7 +6,7 @@
 <script>
 "use strict";
 const { Contract, ethers, Signer, Wallet, BigNumber } = require("ethers");
-const { getOpinionatedSecret, getQuestion, getTree, generateProof, getRegisterEvents, extractQuestions, SessionInfo } = require("asi");
+const { getOpinionatedSecret, getQuestion, getTree, generateProof, getRegisterEvents, extractQuestions, SessionInfo, ASI } = require("asi");
 
 
 const userPrivKeys = [
@@ -44,15 +44,16 @@ const asiContract = new Contract(
     provider
     );
 const userAddrs = userPrivKeys.map((key) => ethers.utils.computeAddress(key));
+const asi = new ASI(ASI.TEMP_ADDR, userSigners[1], asiSigners[1]);
 
 function parse() {
     return SessionInfo.parse(document.getElementById("ta").value);
 }
+
 async function create() {
     console.log("creating session...")
-    const sessionInfo = SessionInfo.parse(document.getElementById("ta").value);
-    const tx = await asiContract.connect(userSigners[1])
-        .createSession(sessionInfo.sessionId, sessionInfo.getUserRoot());
+    const sessionInfo = parse();
+    const tx = await asi.createSession(sessionInfo.sessionId, sessionInfo.getUserTreeRoot());
     const receipt = await tx.wait();
     console.log("createSession: ", receipt);
 }
@@ -78,11 +79,11 @@ function toHex(a) {
     return BigNumber.from(a).toHexString();
 }
 
-async function verifyWithTheContract(str) {
-    const session = verifyContent(str);
-    const userTreeRoot = await asiContract.getUserTreeRoot(session.sessionId);
+async function verifyWithTheContract() {
+    const sessionInfo = parse();
+    const userTreeRoot = await asi.getUserTreeRoot(sessionInfo.sessionId);
     console.log("The user tree root from the contract:\n" + toHex(userTreeRoot));
-    if (! eq(session.root, userTreeRoot)) {
+    if (! eq(sessionInfo.getUserTreeRoot(), userTreeRoot)) {
         console.log("Two roots don't match!!");
     } else {
         console.log("Two user tree roots do match.");
@@ -177,7 +178,7 @@ async function proof() {
 <br/>
 <input type="button" value="Create with B" onclick="create()"/>
 <br/>
-<input type="button" value="Verify with the contract" onclick="verifyWithTheContract(document.getElementById('ta').value)"/><br/>
+<input type="button" value="Verify with the contract" onclick="verifyWithTheContract()"/><br/>
 
 <input type="button" value="Register with b" onclick="register()"/>
 <input type="text" id="secret" value="secret here"/>

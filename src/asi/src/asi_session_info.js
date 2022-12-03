@@ -21,7 +21,7 @@ class SessionInfo {
         return [...this.idToAddr.values()];
     }
     // BigInt
-    getUserRoot() {
+    getUserTreeRoot() {
         return getTree(this.idToAddr.values()).root;
     }
     stringify() {
@@ -29,7 +29,7 @@ class SessionInfo {
         const o = {
             sessionId: h(this.sessionId),
             users: [...this.idToAddr.entries()],
-            root: h(this.getUserRoot())
+            root: h(this.getUserTreeRoot())
             };
         return JSON.stringify(o, undefined, 4)
             .replaceAll(/^(\s+\[)\n\s+/gm, (match, p1) => p1 + " ")
@@ -42,8 +42,8 @@ class SessionInfo {
         json.users.forEach(([id, addr]) => {
             si.add(id, addr);
         });
-        if (BigInt(json.root) != si.getUserRoot()) {
-            throw "root mismatch: " + BigInt(json.root) + " " + si.getUserRoot();
+        if (BigInt(json.root) != si.getUserTreeRoot()) {
+            throw "root mismatch: " + BigInt(json.root) + " " + si.getUserTreeRoot();
         }
         return si;
     }
