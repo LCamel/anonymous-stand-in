@@ -14,12 +14,22 @@ class SessionInfo {
     add(id, addr) {
         this.idToAddr.set(id, ethers.utils.getAddress(addr));
     }
+    getSessionId() {
+        return this.sessionId;
+    }
+    getUserAddresses() {
+        return [...this.idToAddr.values()];
+    }
+    // BigInt
+    getUserRoot() {
+        return getTree(this.idToAddr.values()).root;
+    }
     stringify() {
         const h = (bi) => "0x" + bi.toString(16);
         const o = {
             sessionId: h(this.sessionId),
             users: [...this.idToAddr.entries()],
-            root: h(getTree(this.idToAddr.values()).root)
+            root: h(this.getUserRoot())
             };
         return JSON.stringify(o, undefined, 4)
             .replaceAll(/^(\s+\[)\n\s+/gm, (match, p1) => p1 + " ")
