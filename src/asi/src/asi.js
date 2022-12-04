@@ -1,5 +1,5 @@
 import { ethers } from "ethers"
-
+import { poseidon } from "circomlibjs"; // for getQuestion()
 
 
 // don't hide ethers.js
@@ -47,7 +47,8 @@ class ASI {
     getSessionId() {
         return this.sessionId;
     }
-    // promise of tx
+    // create a new session
+    // returns a promise of tx
     createSession(sessionId, userTreeRoot) {
         this.setSession(sessionId, userTreeRoot); // TODO: error handling
         return this.contract.createSession(sessionId, userTreeRoot);
@@ -65,6 +66,16 @@ class ASI {
         return this.asiSigner.signMessage(this.sessionId.toString())
             .then(s => BigInt(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(s))));
     }
+    static getQuestion(userAddr, secret) {
+        return poseidon([userAddr, secret]);
+    }
+    // Promise
+    getOpinionatedQuestion() {
+        return Promise.all([this.getUserAddress(), this.getOpinionatedSecret()])
+            .then(([userAddr, secret]) => getQuestion(userAddr, secret))
+            ;
+    }
+
     register(question) {
         return this.contract.connect(this.asiSigner).register(this.sessionId, question);
     }
