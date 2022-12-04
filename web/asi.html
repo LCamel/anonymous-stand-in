@@ -46,10 +46,9 @@ const asiContract = new Contract(
 const userAddrs = userPrivKeys.map((key) => ethers.utils.computeAddress(key));
 const asi = new ASI(ASI.TEMP_ADDR, userSigners[1], asiSigners[1]);
 
+// throws exception if the userTreeRoot is wrong
 function parse() {
-    const sessionInfo = SessionInfo.parse(document.getElementById("ta").value);
-    asi.setSession(sessionInfo.sessionId, sessionInfo.getUserTreeRoot());
-    return sessionInfo;
+    return SessionInfo.parse(document.getElementById("ta").value);
 }
 
 async function create() {
@@ -82,8 +81,8 @@ function toHex(a) {
 }
 
 async function verifyWithTheContract() {
-    const sessionInfo = parse();
-    const userTreeRoot = await asi.getUserTreeRoot(sessionInfo.sessionId);
+    const sessionId = parse().sessionId;
+    const userTreeRoot = await asi.getUserTreeRoot(sessionId);
     console.log("The user tree root from the contract:\n" + toHex(userTreeRoot));
     if (! eq(sessionInfo.getUserTreeRoot(), userTreeRoot)) {
         console.log("Two roots don't match!!");
@@ -93,16 +92,13 @@ async function verifyWithTheContract() {
 }
 async function register() {
     try {
-    //const sessionInfo = parse();
-    //console.log("sessionId: " + sessionInfo.sessionId);
-    //const userAddr = await asi.getUserAddress();
-    //const secret = await asi.getOpinionatedSecret();
-    //const question = getQuestion(userAddr, secret);
-    //console.log(`userAddr: ${userAddr} secret: ${secret} question: ${question}`);
-    const question = asi.getOpinionatedQuestion();
+    const sessionId = parse().sessionId;
+
+    const question = asi.getOpinionatedQuestion(sessionId);
     console.log("question: " + question);
 
-    const tx = await asi.register(question);
+    console.log("going to register()...");
+    const tx = await asi.register(sessionId, question);
     const receipt = await tx.wait();
     console.log("register: ", receipt);
     } catch (ex) {

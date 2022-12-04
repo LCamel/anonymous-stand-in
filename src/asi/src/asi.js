@@ -44,40 +44,32 @@ class ASI {
     getUserAddress() {
         return this.userSigner.getAddress();
     }
-    getSessionId() {
-        return this.sessionId;
-    }
     // create a new session
     // returns a promise of tx
     createSession(sessionId, userTreeRoot) {
-        this.setSession(sessionId, userTreeRoot); // TODO: error handling
         return this.contract.createSession(sessionId, userTreeRoot);
-    }
-    // interact with an existing session
-    setSession(sessionId, userTreeRoot) {
-        this.sessionId = BigInt(sessionId);
-        this.userTreeRoot = BigInt(userTreeRoot);
     }
 
     getUserTreeRoot(sessionId) {
         return this.contract.getUserTreeRoot(sessionId);
     }
-    getOpinionatedSecret() {
-        return this.asiSigner.signMessage(this.sessionId.toString())
+    getOpinionatedSecret(sessionId) {
+        return this.asiSigner.signMessage(sessionId.toString())
             .then(s => BigInt(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(s))));
     }
     static getQuestion(userAddr, secret) {
         return poseidon([userAddr, secret]);
     }
     // Promise
-    getOpinionatedQuestion() {
-        return Promise.all([this.getUserAddress(), this.getOpinionatedSecret()])
+    getOpinionatedQuestion(sessionId) {
+        return Promise.all([this.getUserAddress(), this.getOpinionatedSecret(sessionId)])
             .then(([userAddr, secret]) => getQuestion(userAddr, secret))
             ;
     }
 
-    register(question) {
-        return this.contract.connect(this.asiSigner).register(this.sessionId, question);
+    // you have to make sure that you are in the user tree before calling register
+    register(sessionId, question) {
+        return this.contract.connect(this.asiSigner).register(sessionId, question);
     }
     /*
     getRegisterEvents(sessionId)

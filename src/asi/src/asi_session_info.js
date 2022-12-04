@@ -14,9 +14,11 @@ class SessionInfo {
     add(id, addr) {
         this.idToAddr.set(id, ethers.utils.getAddress(addr));
     }
+    // BigInt
     getSessionId() {
         return this.sessionId;
     }
+    // address hex strings in insertion order
     getUserAddresses() {
         return [...this.idToAddr.values()];
     }
