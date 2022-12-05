@@ -1,14 +1,15 @@
 import { ethers } from "ethers"
 import { poseidon } from "circomlibjs"; // for getQuestion()
 
-
-// don't hide ethers.js
-
+// dev: don't hide ethers.js
 class ASI {
     static ABI = [
+        "event CreateSession(uint indexed sessionId, uint userTreeRoot)",
         "event Register(uint indexed sessionId, uint question, address standIn)",
         "event Proof(uint indexed sessionId, address user)",
+        "error ZeroSessionIdError()",
         "error ZeroUserTreeRootError()",
+        "error ZeroQuestionError()",
         "error SessionAlreadyExistsError()",
         "error SessionDoesNotExistError()",
         "error AlreadyProofedError()",
@@ -44,7 +45,7 @@ class ASI {
     getUserTreeRoot(sessionId) {
         return this.contract.getUserTreeRoot(sessionId);
     }
-    // secret = signByAsi(sessionId)
+    // Promise: secret = signByAsi(sessionId)
     getOpinionatedSecret(sessionId) {
         return this.asiSigner.signMessage(sessionId.toString())
             .then((s) => BigInt(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(s))));
@@ -82,12 +83,5 @@ class ASI {
         const userIndex = publicSignals[1];
         return this.contract.proof(sessionId, a, b, c, userIndex);
     }
-    /*
-    getRegisterEvents(sessionId)
-    static extractQuestions
-    static getOpinionatedSecret
-    static getQuestion
-    register()
-    */
 }
 export { ASI };
