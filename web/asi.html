@@ -39,8 +39,8 @@ function parse() {
 
 async function create() {
     console.log("calling createSession()...");
-    const sessionInfo = parse();
-    const tx = await user.createSession(sessionInfo.sessionId, sessionInfo.getUserTreeRoot());
+    const { sessionId, userTreeRoot } = parse();
+    const tx = await user.createSession(sessionId, userTreeRoot);
     const receipt = await tx.wait();
     console.log("createSession: ", receipt);
 }
@@ -54,11 +54,11 @@ function toHex(a) {
 }
 
 async function verifyWithTheContract() {
-    const sessionInfo = parse();
+    const { sessionId, userTreeRoot } = parse();
     console.log("calling getUserTreeRoot()...");
-    const userTreeRoot = await user.getUserTreeRoot(sessionInfo.sessionId);
-    console.log("The user tree root from the contract:\n" + toHex(userTreeRoot));
-    if (! eq(sessionInfo.getUserTreeRoot(), userTreeRoot)) {
+    const contractUserTreeRoot = await user.getUserTreeRoot(sessionId);
+    console.log("The user tree root from the contract:\n" + toHex(contractUserTreeRoot));
+    if (! eq(userTreeRoot, contractUserTreeRoot)) {
         console.log("Two roots don't match!!");
     } else {
         console.log("Two user tree roots do match.");
@@ -66,7 +66,7 @@ async function verifyWithTheContract() {
 }
 async function register() {
     try {
-    const sessionId = parse().sessionId;
+    const { sessionId } = parse();
 
     const question = await asi.getOpinionatedQuestion(sessionId);
     console.log("question: " + question);
@@ -81,17 +81,16 @@ async function register() {
 }
 
 async function proof() {
-    const sessionInfo = parse();
+    const { sessionId, userAddresses } = parse();
     //const userAddress // globally defined
-    const userAddresses = sessionInfo.getUserAddresses();
-    const secret = await asi.getOpinionatedSecret(sessionInfo.sessionId);
-    const questions = await user.getQuestions(sessionInfo.sessionId);
+    const secret = await asi.getOpinionatedSecret(sessionId);
+    const questions = await user.getQuestions(sessionId);
 
     console.log("generating proof...");
     const proofAndPublicSignals = await generateProof(userAddress, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
 
     console.log("calling proof()...");
-    const tx = await user.proof(sessionInfo.sessionId, proofAndPublicSignals);
+    const tx = await user.proof(sessionId, proofAndPublicSignals);
     const receipt = await tx.wait();
     console.log("proof: ", receipt);
 }

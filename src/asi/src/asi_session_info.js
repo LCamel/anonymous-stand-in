@@ -14,16 +14,12 @@ class SessionInfo {
     add(id, addr) {
         this.idToAddr.set(id, ethers.utils.getAddress(addr));
     }
-    // BigInt
-    getSessionId() {
-        return this.sessionId;
-    }
     // address hex strings in insertion order
-    getUserAddresses() {
+    get userAddresses() {
         return [...this.idToAddr.values()];
     }
     // BigInt
-    getUserTreeRoot() {
+    get userTreeRoot() {
         return getTree(this.idToAddr.values()).root;
     }
     stringify() {
@@ -44,8 +40,8 @@ class SessionInfo {
         json.users.forEach(([id, addr]) => {
             si.add(id, addr);
         });
-        if (BigInt(json.root) != si.getUserTreeRoot()) {
-            throw "root mismatch: " + BigInt(json.root) + " " + si.getUserTreeRoot();
+        if (BigInt(json.root) != si.userTreeRoot) {
+            throw "root mismatch: " + BigInt(json.root) + " " + si.userTreeRoot;
         }
         return si;
     }
