@@ -6,27 +6,16 @@
 <script>
 "use strict";
 const { ethers, Wallet, BigNumber } = require("ethers");
-const { generateProof, SessionInfo, ASI, SampleAccounts } = require("asi");
+const { generateProof, SessionInfo, User, ASI, SampleAccounts, TEMP_ADDR } = require("asi");
 
 
 const provider = new ethers.providers.JsonRpcProvider(); // local
 const userSigners = SampleAccounts.userPrivateKeys.map((key) => new Wallet(key, provider));
 const asiSigners = SampleAccounts.asiPrivateKeys.map((key) => new Wallet(key, provider));
 const userAddress = SampleAccounts.userAddresses[1];
-const asi = new ASI(ASI.TEMP_ADDR, userAddress, userSigners[1], asiSigners[1]);
+const user = new User(TEMP_ADDR, userAddress, userSigners[1]);
+const asi = new ASI(TEMP_ADDR, userAddress, asiSigners[1]);
 
-// throws exception if the userTreeRoot is wrong
-function parse() {
-    return SessionInfo.parse(document.getElementById("ta").value);
-}
-
-async function create() {
-    console.log("calling createSession()...");
-    const sessionInfo = parse();
-    const tx = await asi.createSession(sessionInfo.sessionId, sessionInfo.getUserTreeRoot());
-    const receipt = await tx.wait();
-    console.log("createSession: ", receipt);
-}
 // https://stackoverflow.com/a/69132762
 (()=>{
   const console_log = window.console.log;
@@ -42,9 +31,24 @@ async function create() {
     textarea.scrollTop = textarea.scrollHeight;
   }
 })();
+
+// throws exception if the userTreeRoot is wrong
+function parse() {
+    return SessionInfo.parse(document.getElementById("ta").value);
+}
+
+async function create() {
+    console.log("calling createSession()...");
+    const sessionInfo = parse();
+    const tx = await user.createSession(sessionInfo.sessionId, sessionInfo.getUserTreeRoot());
+    const receipt = await tx.wait();
+    console.log("createSession: ", receipt);
+}
+
 function eq(a, b) {
     return BigNumber.from(a).eq(BigNumber.from(b));
 }
+
 function toHex(a) {
     return BigNumber.from(a).toHexString();
 }
@@ -52,7 +56,7 @@ function toHex(a) {
 async function verifyWithTheContract() {
     const sessionInfo = parse();
     console.log("calling getUserTreeRoot()...");
-    const userTreeRoot = await asi.getUserTreeRoot(sessionInfo.sessionId);
+    const userTreeRoot = await user.getUserTreeRoot(sessionInfo.sessionId);
     console.log("The user tree root from the contract:\n" + toHex(userTreeRoot));
     if (! eq(sessionInfo.getUserTreeRoot(), userTreeRoot)) {
         console.log("Two roots don't match!!");
@@ -81,13 +85,13 @@ async function proof() {
     //const userAddress // globally defined
     const userAddresses = sessionInfo.getUserAddresses();
     const secret = await asi.getOpinionatedSecret(sessionInfo.sessionId);
-    const questions = await asi.getQuestions(sessionInfo.sessionId);
+    const questions = await user.getQuestions(sessionInfo.sessionId);
 
     console.log("generating proof...");
     const proofAndPublicSignals = await generateProof(userAddress, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
 
     console.log("calling proof()...");
-    const tx = await asi.proof(sessionInfo.sessionId, proofAndPublicSignals);
+    const tx = await user.proof(sessionInfo.sessionId, proofAndPublicSignals);
     const receipt = await tx.wait();
     console.log("proof: ", receipt);
 }
