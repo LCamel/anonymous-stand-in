@@ -44,7 +44,8 @@ const asiContract = new Contract(
     provider
     );
 const userAddrs = userPrivKeys.map((key) => ethers.utils.computeAddress(key));
-const asi = new ASI(ASI.TEMP_ADDR, userSigners[1], asiSigners[1]);
+const userAddress = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"; // TODO;
+const asi = new ASI(ASI.TEMP_ADDR, userAddress, userSigners[1], asiSigners[1]);
 
 // throws exception if the userTreeRoot is wrong
 function parse() {
@@ -81,8 +82,8 @@ function toHex(a) {
 }
 
 async function verifyWithTheContract() {
-    const sessionId = parse().sessionId;
-    const userTreeRoot = await asi.getUserTreeRoot(sessionId);
+    const sessionInfo = parse();
+    const userTreeRoot = await asi.getUserTreeRoot(sessionInfo.sessionId);
     console.log("The user tree root from the contract:\n" + toHex(userTreeRoot));
     if (! eq(sessionInfo.getUserTreeRoot(), userTreeRoot)) {
         console.log("Two roots don't match!!");
@@ -94,7 +95,7 @@ async function register() {
     try {
     const sessionId = parse().sessionId;
 
-    const question = asi.getOpinionatedQuestion(sessionId);
+    const question = await asi.getOpinionatedQuestion(sessionId);
     console.log("question: " + question);
 
     console.log("going to register()...");
@@ -107,27 +108,17 @@ async function register() {
 }
 
 async function proof() {
-    const userIndex = 1; // B / b
+    const sessionInfo = parse();
+    const userAddr = await userSigners[1].getAddress(); // TODO
+    const userAddresses = sessionInfo.getUserAddresses();
+    const secret = await asi.getOpinionatedSecret(sessionInfo.sessionId);
+    const questions = await asi.getQuestions(sessionInfo.sessionId);
 
-    const session = verifyContent(document.getElementById('ta').value);
-    const userAddr = userAddrs[userIndex];
-    const secret = await getOpinionatedSecret(asiSigners[userIndex], session.sessionId);
-    const questions = await
-        getRegisterEvents(provider, "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98", 7888888, session.sessionId)
-        .then(extractQuestions);
-    // function generateProof(userAddr, userAddrs, secret, questions, wasm, zkey) {
-    console.log("userAddr: " + userAddr);
-    console.log("session.userAddresses.values(): " + session.userAddresses.values());
-    const { proof, publicSignals } = await generateProof(userAddr, session.userAddresses.values(), secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
-    console.log(proof);
+    console.log("generating proof...");
+    const proofAndPublicSignals = await generateProof(userAddr, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
 
-    const a = [ proof.pi_a[0], proof.pi_a[1] ];
-    const b = [[ proof.pi_b[0][1], proof.pi_b[0][0] ],
-               [ proof.pi_b[1][1], proof.pi_b[1][0] ]];
-    const c = [ proof.pi_c[0],  proof.pi_c[1] ];
-
-    const tx = await asiContract.connect(userSigners[userIndex])
-        .proof(session.sessionId, a, b, c, publicSignals[1]);
+    console.log("calling proof()...");
+    const tx = await asi.proof(sessionInfo.sessionId, proofAndPublicSignals);
     const receipt = await tx.wait();
     console.log("proof: ", receipt);
 }
@@ -156,7 +147,7 @@ async function proof() {
 </style>
 <textarea id="ta" rows="13" style="width: 100%">
 {
-    "sessionId": "0x323e2f9e07db0fc7423d9f978d3597b7074fda78e4f74d2cea261d468c7731a5",
+    "sessionId": "0x323e2f9e07db0fc7423d9f978d3597b7074fda78e4f74d2cea261d468c7731b0",
     "users": [
         [ "B",
           "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" ],

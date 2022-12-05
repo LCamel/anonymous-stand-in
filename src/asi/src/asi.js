@@ -29,47 +29,58 @@ class ASI {
     */
     // HAS A Contract
     //static getXXX(){}
-    constructor(contractAddr, userSigner, asiSigner) {
-        this.contract = new ethers.Contract(contractAddr, ASI.ABI, userSigner);
+    constructor(contractAddress, userAddress, userSigner, asiSigner) {
+        this.contract = new ethers.Contract(contractAddress, ASI.ABI, userSigner);
+        this.userAddress = userAddress;
         this.userSigner = userSigner;
         this.asiSigner = asiSigner;
-    }
-    getUserSigner() {
-        return this.userSigner;
-    }
-    getAsiSigner() {
-        return this.asiSigner;
-    }
-    // Promise
-    getUserAddress() {
-        return this.userSigner.getAddress();
     }
     // create a new session
     // returns a promise of tx
     createSession(sessionId, userTreeRoot) {
         return this.contract.createSession(sessionId, userTreeRoot);
     }
-
+    // get from the contract on the chain
     getUserTreeRoot(sessionId) {
         return this.contract.getUserTreeRoot(sessionId);
     }
+    // secret = signByAsi(sessionId)
     getOpinionatedSecret(sessionId) {
         return this.asiSigner.signMessage(sessionId.toString())
-            .then(s => BigInt(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(s))));
+            .then((s) => BigInt(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(s))));
     }
-    static getQuestion(userAddr, secret) {
-        return poseidon([userAddr, secret]);
+    // question = hash(userAddress, secret)
+    static getQuestion(userAddress, secret) {
+        return poseidon([userAddress, secret]);
     }
     // Promise
     getOpinionatedQuestion(sessionId) {
-        return Promise.all([this.getUserAddress(), this.getOpinionatedSecret(sessionId)])
-            .then(([userAddr, secret]) => getQuestion(userAddr, secret))
+        return this.getOpinionatedSecret(sessionId)
+            .then((secret) => getQuestion(this.userAddress, secret))
             ;
     }
-
     // you have to make sure that you are in the user tree before calling register
     register(sessionId, question) {
         return this.contract.connect(this.asiSigner).register(sessionId, question);
+    }
+    // promise of register events
+    getRegisterEvents(sessionId) {
+        const filter = this.contract.filters.Register(sessionId);
+        return this.contract.queryFilter(filter);
+    }
+    // promise of questions (BigInts)
+    getQuestions(sessionId) {
+        return this.getRegisterEvents(sessionId)
+            .then((events) => events.map((event) => event.args.question.toBigInt()));
+    }
+    proof(sessionId, proofAndPublicSignals) {
+        const { proof, publicSignals } = proofAndPublicSignals;
+        const a = [ proof.pi_a[0], proof.pi_a[1] ];
+        const b = [[ proof.pi_b[0][1], proof.pi_b[0][0] ],
+                   [ proof.pi_b[1][1], proof.pi_b[1][0] ]];
+        const c = [ proof.pi_c[0],  proof.pi_c[1] ];
+        const userIndex = publicSignals[1];
+        return this.contract.proof(sessionId, a, b, c, userIndex);
     }
     /*
     getRegisterEvents(sessionId)
