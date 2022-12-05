@@ -56,7 +56,7 @@ class ASI {
     // Promise
     getOpinionatedQuestion(sessionId) {
         return this.getOpinionatedSecret(sessionId)
-            .then((secret) => getQuestion(this.userAddress, secret))
+            .then((secret) => ASI.getQuestion(this.userAddress, secret))
             ;
     }
     // you have to make sure that you are in the user tree before calling register

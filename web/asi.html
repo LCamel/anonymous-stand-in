@@ -5,8 +5,8 @@
 
 <script>
 "use strict";
-const { Contract, ethers, Signer, Wallet, BigNumber } = require("ethers");
-const { getOpinionatedSecret, getQuestion, getTree, generateProof, getRegisterEvents, extractQuestions, SessionInfo, ASI } = require("asi");
+const { ethers, Wallet, BigNumber } = require("ethers");
+const { generateProof, SessionInfo, ASI } = require("asi");
 
 
 const userPrivKeys = [
@@ -27,22 +27,6 @@ const asiPrivKeys = [
 const provider = new ethers.providers.JsonRpcProvider(); // local
 const userSigners = userPrivKeys.map((key) => new Wallet(key, provider));
 const asiSigners = asiPrivKeys.map((key) => new Wallet(key, provider));
-const asiContract = new Contract(
-    "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98",
-    [
-        "event Register(uint indexed sessionId, uint question, address standIn)",
-        "event Proof(uint indexed sessionId, address user)",
-        "error SessionDoesNotExistError()",
-        "error AlreadyProofedError()",
-        "error VerificationError()",
-        "function createSession(uint sessionId, uint userTreeRoot) public",
-        "function getUserTreeRoot(uint sessionId) public view returns (uint)",
-        "function getQuestionTreeRoot(uint sessionId) public view returns (uint)",
-        "function register(uint sessionId, uint question) public",
-        "function proof(uint sessionId, uint[2] memory a, uint[2][2] memory b, uint[2] memory c, uint userIndex) public returns (bool r)",
-    ],
-    provider
-    );
 const userAddrs = userPrivKeys.map((key) => ethers.utils.computeAddress(key));
 const userAddress = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"; // TODO;
 const asi = new ASI(ASI.TEMP_ADDR, userAddress, userSigners[1], asiSigners[1]);
@@ -147,7 +131,7 @@ async function proof() {
 </style>
 <textarea id="ta" rows="13" style="width: 100%">
 {
-    "sessionId": "0x323e2f9e07db0fc7423d9f978d3597b7074fda78e4f74d2cea261d468c7731b0",
+    "sessionId": "0x323e2f9e07db0fc7423d9f978d3597b7074fda78e4f74d2cea261d468c7731d0",
     "users": [
         [ "B",
           "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" ],
