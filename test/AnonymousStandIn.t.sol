@@ -15,32 +15,46 @@ contract AnonymousStandInTest is Test {
         anonymousStandIn.createSession(1, 2);
     }
     function testCreateSession(uint sessionId, uint userTreeRoot) public {
+        vm.assume(sessionId != 0);
         vm.assume(userTreeRoot != 0);
         anonymousStandIn.createSession(sessionId, userTreeRoot);
     }
+    function testCreateSessionZeroSessionId(uint userTreeRoot) public {
+        vm.assume(userTreeRoot != 0);
+        vm.expectRevert(AnonymousStandIn.ZeroSessionIdError.selector);
+        anonymousStandIn.createSession(0, userTreeRoot);
+    }
     function testCreateSessionZeroUserTreeRoot(uint sessionId) public {
+        vm.assume(sessionId != 0);
         vm.expectRevert(AnonymousStandIn.ZeroUserTreeRootError.selector);
         anonymousStandIn.createSession(sessionId, 0);
     }
     function testGetUserTreeRoot(uint sessionId, uint userTreeRoot) public {
+        vm.assume(sessionId != 0);
         vm.assume(userTreeRoot != 0);
         anonymousStandIn.createSession(sessionId, userTreeRoot);
         uint ans = anonymousStandIn.getUserTreeRoot(sessionId);
         assertEq(ans, userTreeRoot);
     }
+    function testGetQuestionTreeRootNonExist() public {
+        uint sessionId = 0x1234567812345678;
+        assertEq(anonymousStandIn.getQuestionTreeRoot(sessionId), 0);
+    }
+
     function testRegister(uint sessionId, uint userTreeRoot) public {
+        vm.assume(sessionId != 0);
         vm.assume(userTreeRoot != 0);
         anonymousStandIn.createSession(sessionId, userTreeRoot);
+        console.log("get getUserTreeRoot: %d", anonymousStandIn.getUserTreeRoot(sessionId));
+        console.log("get getQuestionTreeRoot: %d", anonymousStandIn.getQuestionTreeRoot(sessionId));
         assertEq(anonymousStandIn.getQuestionTreeRoot(sessionId), EMPTY_ROOT_LV5);
-
-
 
         anonymousStandIn.register(sessionId, 100);
         anonymousStandIn.register(sessionId, 200);
         anonymousStandIn.register(sessionId, 300);
+        console.log(anonymousStandIn.getQuestionTreeRoot(sessionId));
         assertEq(anonymousStandIn.getQuestionTreeRoot(sessionId), 9820248798996799339337222160692833371779041583374940739456384906719907708545);
     }
-
 
     /*
     function testGenerateUserRoot() public {
