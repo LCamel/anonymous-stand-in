@@ -73,6 +73,10 @@ class ASISide {
         return poseidon([userAddress, secret]);
     }
 
+    getQuestion(secret) {
+        return ASISide.getQuestion(this.userAddress, secret);
+    }
+
     // You have to make sure that you are in the user tree before calling register.
     // If not, you will not be able to call prove() to get back the fund.
     //
@@ -89,7 +93,7 @@ class ASISide {
             .register(sessionId, ASISide.getQuestion(this.userAddress, secret));
     }
 
-    // Promise: secret = signByAsi(sessionId)
+    // Promise: secret = sign_by_ASI(sessionId)
     getOpinionatedSecret(sessionId) {
         return this.asiSigner.signMessage(sessionId.toString())
             .then((s) => BigInt(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(s))));
@@ -99,11 +103,11 @@ class ASISide {
     // call getOpinionatedSecret() and getQuestion() separately.
     //
     // Promise
-    getOpinionatedQuestion(sessionId) {
-        return this.getOpinionatedSecret(sessionId)
-            .then((secret) => ASISide.getQuestion(this.userAddress, secret))
-            ;
-    }
+    //getOpinionatedQuestion(sessionId) {
+    //    return this.getOpinionatedSecret(sessionId)
+    //        .then((secret) => ASISide.getQuestion(this.userAddress, secret))
+    //        ;
+    //}
 }
 
 export { UserSide, ASISide, ABI, TEMP_ADDR };

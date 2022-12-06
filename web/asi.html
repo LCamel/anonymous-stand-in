@@ -23,7 +23,7 @@ const asiSide = new ASISide(TEMP_ADDR, userAddress, asiSigners[1]);
     console_log(...args);
     var textarea = document.getElementById('console_ta');
     if(!textarea) return;
-    if (args.length == 1 && typeof(args[0]) == 'string') {
+    if (args.length == 1 && (typeof(args[0]) == 'string') || typeof(args[0]) == 'bigint') {
         textarea.value += args[0] + "\n";
     } else {
         args.forEach(arg=>textarea.value += `${JSON.stringify(arg, undefined, 4)}\n`);
@@ -67,8 +67,10 @@ async function verifyWithTheContract() {
 async function register() {
     try {
     const { sessionId } = parse();
-
-    const question = await asiSide.getOpinionatedQuestion(sessionId);
+    const secret = await asiSide.getOpinionatedSecret(sessionId);
+    document.getElementById("secret").value = secret;
+    console.log("secret: " + secret);
+    const question = asiSide.getQuestion(secret);
     console.log("question: " + question);
 
     console.log("calling register()...");
@@ -82,8 +84,11 @@ async function register() {
 
 async function proof() {
     const { sessionId, userAddresses } = parse();
+
     //const userAddress // globally defined
+    //const secret = BigInt(document.getElementById("secret").value);
     const secret = await asiSide.getOpinionatedSecret(sessionId);
+    console.log("secret: " + secret);
     const questions = await userSide.getQuestions(sessionId);
 
     console.log("generating proof...");
