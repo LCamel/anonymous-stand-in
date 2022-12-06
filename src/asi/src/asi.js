@@ -24,7 +24,7 @@ const ABI = [
 
 const TEMP_ADDR = "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98";
 
-class User {
+class UserSide {
     constructor(contractAddress, userAddress, userSigner) {
         this.contract = new ethers.Contract(contractAddress, ABI, userSigner);
         this.userAddress = userAddress;
@@ -61,32 +61,49 @@ class User {
     }
 }
 
-class ASI {
+class ASISide {
     constructor(contractAddress, userAddress, asiSigner) {
         this.contract = new ethers.Contract(contractAddress, ABI, asiSigner);
         this.userAddress = userAddress;
         this.asiSigner = asiSigner;
     }
+
+    // question = hash(userAddress, secret)
+    static getQuestion(userAddress, secret) {
+        return poseidon([userAddress, secret]);
+    }
+
+    // You have to make sure that you are in the user tree before calling register.
+    // If not, you will not be able to call prove() to get back the fund.
+    //
+    // This function is the canonical one,
+    // but in 99% of situations you should call registerWithSecret() instead.
+    register(sessionId, question) {
+        return this.contract.connect(this.asiSigner).register(sessionId, question);
+    }
+
+    // A more convenient version of register().
+    // In 99% of situations you should call this function.
+    registerWithSecret(sessionId, secret) {
+        return this.contract.connect(this.asiSigner)
+            .register(sessionId, ASISide.getQuestion(this.userAddress, secret));
+    }
+
     // Promise: secret = signByAsi(sessionId)
     getOpinionatedSecret(sessionId) {
         return this.asiSigner.signMessage(sessionId.toString())
             .then((s) => BigInt(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(s))));
     }
-    // question = hash(userAddress, secret)
-    static getQuestion(userAddress, secret) {
-        return poseidon([userAddress, secret]);
-    }
+
+    // Since the User side need the secret, I think it is better to
+    // call getOpinionatedSecret() and getQuestion() separately.
+    //
     // Promise
     getOpinionatedQuestion(sessionId) {
         return this.getOpinionatedSecret(sessionId)
-            .then((secret) => ASI.getQuestion(this.userAddress, secret))
+            .then((secret) => ASISide.getQuestion(this.userAddress, secret))
             ;
-    }
-    // you have to make sure that you are in the user tree before calling register
-    // if not, you will not be able to call prove() to get back the fund
-    register(sessionId, question) {
-        return this.contract.connect(this.asiSigner).register(sessionId, question);
     }
 }
 
-export { ASI, User, TEMP_ADDR };
+export { UserSide, ASISide, ABI, TEMP_ADDR };

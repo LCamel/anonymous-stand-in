@@ -6,15 +6,15 @@
 <script>
 "use strict";
 const { ethers, Wallet, BigNumber } = require("ethers");
-const { generateProof, SessionInfo, User, ASI, SampleAccounts, TEMP_ADDR } = require("asi");
+const { generateProof, SessionInfo, UserSide, ASISide, SampleAccounts, TEMP_ADDR } = require("asi");
 
 
 const provider = new ethers.providers.JsonRpcProvider(); // local
 const userSigners = SampleAccounts.userPrivateKeys.map((key) => new Wallet(key, provider));
 const asiSigners = SampleAccounts.asiPrivateKeys.map((key) => new Wallet(key, provider));
 const userAddress = SampleAccounts.userAddresses[1];
-const user = new User(TEMP_ADDR, userAddress, userSigners[1]);
-const asi = new ASI(TEMP_ADDR, userAddress, asiSigners[1]);
+const userSide = new UserSide(TEMP_ADDR, userAddress, userSigners[1]);
+const asiSide = new ASISide(TEMP_ADDR, userAddress, asiSigners[1]);
 
 // https://stackoverflow.com/a/69132762
 (()=>{
@@ -40,7 +40,7 @@ function parse() {
 async function create() {
     console.log("calling createSession()...");
     const { sessionId, userTreeRoot } = parse();
-    const tx = await user.createSession(sessionId, userTreeRoot);
+    const tx = await userSide.createSession(sessionId, userTreeRoot);
     const receipt = await tx.wait();
     console.log("createSession: ", receipt);
 }
@@ -56,7 +56,7 @@ function toHex(a) {
 async function verifyWithTheContract() {
     const { sessionId, userTreeRoot } = parse();
     console.log("calling getUserTreeRoot()...");
-    const contractUserTreeRoot = await user.getUserTreeRoot(sessionId);
+    const contractUserTreeRoot = await userSide.getUserTreeRoot(sessionId);
     console.log("The user tree root from the contract:\n" + toHex(contractUserTreeRoot));
     if (! eq(userTreeRoot, contractUserTreeRoot)) {
         console.log("Two roots don't match!!");
@@ -68,11 +68,11 @@ async function register() {
     try {
     const { sessionId } = parse();
 
-    const question = await asi.getOpinionatedQuestion(sessionId);
+    const question = await asiSide.getOpinionatedQuestion(sessionId);
     console.log("question: " + question);
 
     console.log("calling register()...");
-    const tx = await asi.register(sessionId, question);
+    const tx = await asiSide.register(sessionId, question);
     const receipt = await tx.wait();
     console.log("register: ", receipt);
     } catch (ex) {
@@ -83,14 +83,14 @@ async function register() {
 async function proof() {
     const { sessionId, userAddresses } = parse();
     //const userAddress // globally defined
-    const secret = await asi.getOpinionatedSecret(sessionId);
-    const questions = await user.getQuestions(sessionId);
+    const secret = await asiSide.getOpinionatedSecret(sessionId);
+    const questions = await userSide.getQuestions(sessionId);
 
     console.log("generating proof...");
     const proofAndPublicSignals = await generateProof(userAddress, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
 
     console.log("calling proof()...");
-    const tx = await user.proof(sessionId, proofAndPublicSignals);
+    const tx = await userSide.proof(sessionId, proofAndPublicSignals);
     const receipt = await tx.wait();
     console.log("proof: ", receipt);
 }
