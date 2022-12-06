@@ -42,7 +42,8 @@ async function create() {
     const { sessionId, userTreeRoot } = parse();
     const tx = await userSide.createSession(sessionId, userTreeRoot);
     const receipt = await tx.wait();
-    console.log("createSession: ", receipt);
+    console.log("createSession: ");
+    showReceipt(receipt);
 }
 
 function eq(a, b) {
@@ -53,17 +54,31 @@ function toHex(a) {
     return BigNumber.from(a).toHexString();
 }
 
-async function verifyWithTheContract() {
-    const { sessionId, userTreeRoot } = parse();
+async function verify() {
+    try {
+    const sessionInfo = parse();
+    console.log("Parse OK");
+    if (!sessionInfo.sessionId) {
+        console.log("[Invalid] empty sessionId.");
+        return;
+    }
     console.log("calling getUserTreeRoot()...");
-    const contractUserTreeRoot = await userSide.getUserTreeRoot(sessionId);
+    const contractUserTreeRoot = await userSide.getUserTreeRoot(sessionInfo.sessionId);
     console.log("The user tree root from the contract:\n" + toHex(contractUserTreeRoot));
-    if (! eq(userTreeRoot, contractUserTreeRoot)) {
-        console.log("Two roots don't match!!");
+    if (eq(contractUserTreeRoot, 0n)) {
+        console.log("[OK] No existing session. You can create the session.");
     } else {
-        console.log("Two user tree roots do match.");
+        if (eq(contractUserTreeRoot, sessionInfo.userTreeRoot)) {
+            console.log("[OK] User tree roots are equal. You can call register() or proof().");
+        } else {
+            console.log("[Invalid] User tree roots are NOT equal. Don't call register() or proof()");
+        }
+    }
+    } catch (e) {
+        console.log("[Invalid] " + e);
     }
 }
+
 async function register() {
     try {
     const { sessionId } = parse();
@@ -75,7 +90,8 @@ async function register() {
     console.log("calling register()...");
     const tx = await asiSide.register(sessionId, question);
     const receipt = await tx.wait();
-    console.log("register: ", receipt);
+    console.log("register: ");
+    showReceipt(receipt);
     } catch (ex) {
         console.log(ex.stack);
     }
@@ -94,7 +110,12 @@ async function proof() {
     console.log("calling proof()...");
     const tx = await userSide.proof(sessionId, proofAndPublicSignals);
     const receipt = await tx.wait();
-    console.log("proof: ", receipt);
+    console.log("proof: ");
+    showReceipt(receipt);
+}
+function showReceipt(receipt) {
+    //console.log(JSON.stringify(receipt, undefined, 4));
+    console.log(receipt);
 }
 
 </script>
@@ -135,12 +156,10 @@ async function proof() {
 </textarea>
 
 <br/>
-<input type="button" value="Verify content" onclick="parse(); console.log('OK')"/>
+<input type="button" value="Verify" onclick="verify()"/>
 <br/>
 <input type="button" value="Create with B" onclick="create()"/>
 <br/>
-<input type="button" value="Verify with the contract" onclick="verifyWithTheContract()"/><br/>
-
 <input type="button" value="Register with b" onclick="register()"/>
 <input type="text" id="secret" value="secret here"/>
 <input type="button" value="Proof with B" onclick="proof()"/>
