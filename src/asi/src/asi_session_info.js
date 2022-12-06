@@ -36,11 +36,14 @@ class SessionInfo {
     }
     static parse(s) {
         const json = JSON.parse(s);
+        if (!json.sessionId) {
+            throw "sessionId should not be empty";
+        }
         const si = new SessionInfo(json.sessionId);
         json.users.forEach(([id, addr]) => {
             si.add(id, addr);
         });
-        if (BigInt(json.root) != si.userTreeRoot) {
+        if (json.root && BigInt(json.root) != si.userTreeRoot) {
             throw "root mismatch: " + BigInt(json.root) + " " + si.userTreeRoot;
         }
         return si;
