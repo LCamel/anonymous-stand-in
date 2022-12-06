@@ -1,5 +1,5 @@
 import { ethers } from "ethers"
-import { getTree } from "./asi_proof.js";
+import { Proof } from "./asi_proof.js";
 
 class SessionInfo {
     static random() {
@@ -20,7 +20,7 @@ class SessionInfo {
     }
     // BigInt
     get userTreeRoot() {
-        return getTree(this.idToAddr.values()).root;
+        return Proof.getTree(this.idToAddr.values()).root;
     }
     stringify() {
         const h = (bi) => "0x" + bi.toString(16);

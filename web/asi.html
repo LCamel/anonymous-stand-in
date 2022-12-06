@@ -6,7 +6,7 @@
 <script>
 "use strict";
 const { ethers, Wallet, BigNumber } = require("ethers");
-const { generateProof, SessionInfo, UserSide, ASISide, SampleAccounts, TEMP_ADDR } = require("asi");
+const { SessionInfo, UserSide, ASISide, SampleAccounts, TEMP_ADDR, Proof } = require("asi");
 
 
 const provider = new ethers.providers.JsonRpcProvider(); // local
@@ -89,7 +89,7 @@ async function proof() {
     const questions = await userSide.getQuestions(sessionId);
 
     console.log("generating proof...");
-    const proofAndPublicSignals = await generateProof(userAddress, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
+    const proofAndPublicSignals = await Proof.generateProof(userAddress, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
 
     console.log("calling proof()...");
     const tx = await userSide.proof(sessionId, proofAndPublicSignals);

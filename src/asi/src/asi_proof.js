@@ -2,7 +2,8 @@ import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
 import { poseidon } from "circomlibjs";
 import { groth16 } from "snarkjs";
 
-function getTree(leafs) {
+class Proof {
+static getTree(leafs) {
     const tree = new IncrementalMerkleTree(poseidon, 5, 0, 2);
     for (const leaf of leafs) {
         tree.insert(BigInt(leaf));
@@ -11,13 +12,13 @@ function getTree(leafs) {
 }
 
 // format = (i) => "0x" + i.toString(16)
-function getCircuitInput(userAddr, userAddrs, secret, questions, format = (i) => i) {
-    const userTree = getTree(userAddrs);
+static getCircuitInput(userAddr, userAddrs, secret, questions, format = (i) => i) {
+    const userTree = Proof.getTree(userAddrs);
     const userIndex = userTree.indexOf(BigInt(userAddr));
     const userMerkleProof = userTree.createProof(userIndex);
 
     const question = poseidon([userAddr, secret]);
-    const questionTree = getTree(questions);
+    const questionTree = Proof.getTree(questions);
     const questionIndex = questionTree.indexOf(BigInt(question));
     const questionMerkleProof = questionTree.createProof(questionIndex);
 
@@ -34,12 +35,12 @@ function getCircuitInput(userAddr, userAddrs, secret, questions, format = (i) =>
     return circuitInput;
 }
 
-function generateProof(userAddr, userAddrs, secret, questions, wasm, zkey) {
-    const circuitInput = getCircuitInput(userAddr, userAddrs, secret, questions);
+static generateProof(userAddr, userAddrs, secret, questions, wasm, zkey) {
+    const circuitInput = Proof.getCircuitInput(userAddr, userAddrs, secret, questions);
     return groth16.fullProve(circuitInput, wasm, zkey);
 }
-
-export { getTree, getCircuitInput, generateProof };
+}
+export { Proof };
 
 //const ci = getCircuitInput(3, [0, 1, 2, 3, 4], 42, [2, 5, poseidon([3, 42]), 4]);
 //console.log(ci);
