@@ -9,13 +9,11 @@
 const { ethers, Wallet, BigNumber } = require("ethers");
 const { SessionInfo, UserSide, ASISide, SampleAccounts, TEMP_ADDR, Proof } = require("asi");
 
-
 const provider = new ethers.providers.JsonRpcProvider(); // local
-const userSigners = SampleAccounts.userPrivateKeys.map((key) => new Wallet(key, provider));
-const asiSigners = SampleAccounts.asiPrivateKeys.map((key) => new Wallet(key, provider));
-const userAddresses = SampleAccounts.userAddresses;
-const userSides = userSigners.map((s, i) => new UserSide(TEMP_ADDR, userAddresses[i], s));
-const asiSides = asiSigners.map((s, i) => new ASISide(TEMP_ADDR, userAddresses[i], s));
+const userSides = SampleAccounts.userPrivateKeys.map((key, i) => new UserSide(
+    TEMP_ADDR, SampleAccounts.userAddresses[i], new Wallet(key, provider)));
+const asiSides = SampleAccounts.asiPrivateKeys.map((key, i) => new ASISide(
+    TEMP_ADDR, SampleAccounts.userAddresses[i], new Wallet(key, provider)));
 
 // throws exception if the userTreeRoot is wrong
 function parse() {
@@ -29,10 +27,7 @@ const create = tryCatch(async (I) => {
     const userSide = userSides[I];
     console.log("calling createSession()...");
     const { sessionId, userTreeRoot } = parse();
-    const tx = await userSide.createSession(sessionId, userTreeRoot);
-    const receipt = await tx.wait();
-    console.log("createSession: ");
-    showReceipt(receipt);
+    showReceipt(userSide.createSession(sessionId, userTreeRoot));
 });
 
 function eq(a, b) {
@@ -75,13 +70,9 @@ const register = tryCatch(async (I) => {
     const secret = await asiSide.getOpinionatedSecret(sessionId);
     document.getElementById(`secret${I}`).value = secret; // pass to the userSide
     const question = asiSide.getQuestion(secret);
-    console.log("question: " + question);
 
     console.log("calling register()...");
-    const tx = await asiSide.register(sessionId, question);
-    const receipt = await tx.wait();
-    console.log("register: ");
-    showReceipt(receipt);
+    showReceipt(asiSide.register(sessionId, question));
 });
 
 const proof = tryCatch(async (I) => {
@@ -94,14 +85,12 @@ const proof = tryCatch(async (I) => {
     const proofAndPublicSignals = await Proof.generateProof(userSide.userAddress, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
 
     console.log("calling proof()...");
-    const tx = await userSide.proof(sessionId, proofAndPublicSignals);
-    const receipt = await tx.wait();
-    console.log("proof: ");
-    showReceipt(receipt);
+    showReceipt(userSide.proof(sessionId, proofAndPublicSignals));
 });
-function showReceipt(receipt) {
-    //console.log(JSON.stringify(receipt, undefined, 4));
-    console.log(receipt);
+
+async function showReceipt(txPromise) {
+    txPromise.then((tx) => tx.wait().then((receipt) => console.log(receipt)))
+        .catch((err) => console.error(err));
 }
 
 </script>
@@ -120,9 +109,9 @@ function showReceipt(receipt) {
 <textarea id="ta" rows="13" style="width: 100%"></textarea>
 <script>
 const si = new SessionInfo();
-si.add("B", userAddresses[1]);
-si.add("C", userAddresses[2]);
-si.add("A", userAddresses[0]);
+si.add("B", SampleAccounts.userAddresses[1]);
+si.add("C", SampleAccounts.userAddresses[2]);
+si.add("A", SampleAccounts.userAddresses[0]);
 document.getElementById("ta").value = si.stringify();
 </script>
 
