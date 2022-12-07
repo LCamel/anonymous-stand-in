@@ -20,14 +20,13 @@ function parse() {
     return SessionInfo.parse(document.getElementById("ta").value);
 }
 
-const tryCatch = (f) => (I) => {
-    try { f(I).catch((err) => { console.error(err); }); } catch (ex) { console.log(ex); } }
+const tryCatch = (f) => async (I) => { try { await f(I); } catch (ex) { console.error(ex); } }
 
 const create = tryCatch(async (I) => {
     const userSide = userSides[I];
     console.log("calling createSession()...");
     const { sessionId, userTreeRoot } = parse();
-    showReceipt(userSide.createSession(sessionId, userTreeRoot));
+    await showReceipt(userSide.createSession(sessionId, userTreeRoot));
 });
 
 function eq(a, b) {
@@ -72,7 +71,7 @@ const register = tryCatch(async (I) => {
     const question = asiSide.getQuestion(secret);
 
     console.log("calling register()...");
-    showReceipt(asiSide.register(sessionId, question));
+    await showReceipt(asiSide.register(sessionId, question));
 });
 
 const proof = tryCatch(async (I) => {
@@ -85,14 +84,14 @@ const proof = tryCatch(async (I) => {
     const proofAndPublicSignals = await Proof.generateProof(userSide.userAddress, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
 
     console.log("calling proof()...");
-    showReceipt(userSide.proof(sessionId, proofAndPublicSignals));
+    await showReceipt(userSide.proof(sessionId, proofAndPublicSignals));
 });
 
 async function showReceipt(txPromise) {
-    txPromise.then((tx) => tx.wait().then((receipt) => console.log(receipt)))
-        .catch((err) => console.error(err));
+    const tx = await txPromise;
+    const receipt = await tx.wait();
+    console.log(receipt);
 }
-
 </script>
 
 
