@@ -1,4 +1,5 @@
-
+<html>
+<head>
 <script src="./bundle.js">
 // npx browserify -r circomlibjs -r @zk-kit/incremental-merkle-tree -r ethers > web/bundle.js
 </script>
@@ -12,32 +13,17 @@ const { SessionInfo, UserSide, ASISide, SampleAccounts, TEMP_ADDR, Proof } = req
 const provider = new ethers.providers.JsonRpcProvider(); // local
 const userSigners = SampleAccounts.userPrivateKeys.map((key) => new Wallet(key, provider));
 const asiSigners = SampleAccounts.asiPrivateKeys.map((key) => new Wallet(key, provider));
-const userAddress = SampleAccounts.userAddresses[1];
-const userSide = new UserSide(TEMP_ADDR, userAddress, userSigners[1]);
-const asiSide = new ASISide(TEMP_ADDR, userAddress, asiSigners[1]);
-
-// https://stackoverflow.com/a/69132762
-(()=>{
-  const console_log = window.console.log;
-  window.console.log = function(...args){
-    console_log(...args);
-    var textarea = document.getElementById('console_ta');
-    if(!textarea) return;
-    if (args.length == 1 && (typeof(args[0]) == 'string') || typeof(args[0]) == 'bigint') {
-        textarea.value += args[0] + "\n";
-    } else {
-        args.forEach(arg=>textarea.value += `${JSON.stringify(arg, undefined, 4)}\n`);
-    }
-    textarea.scrollTop = textarea.scrollHeight;
-  }
-})();
+const userAddresses = SampleAccounts.userAddresses;
+const userSides = userSigners.map((s, i) => new UserSide(TEMP_ADDR, userAddresses[i], s));
+const asiSides = asiSigners.map((s, i) => new ASISide(TEMP_ADDR, userAddresses[i], s));
 
 // throws exception if the userTreeRoot is wrong
 function parse() {
     return SessionInfo.parse(document.getElementById("ta").value);
 }
 
-async function create() {
+async function create(I) {
+    const userSide = userSides[I];
     console.log("calling createSession()...");
     const { sessionId, userTreeRoot } = parse();
     const tx = await userSide.createSession(sessionId, userTreeRoot);
@@ -54,8 +40,9 @@ function toHex(a) {
     return BigNumber.from(a).toHexString();
 }
 
-async function verify() {
+async function verify(I) {
     try {
+    const userSide = userSides[I]; // TODO: 1. extract to lib 2. provider
     const sessionInfo = parse();
     console.log("Parse OK");
     if (!sessionInfo.sessionId) {
@@ -75,15 +62,16 @@ async function verify() {
         }
     }
     } catch (e) {
-        console.log("[Invalid] " + e);
+        console.error("[Invalid] " + e);
     }
 }
 
-async function register() {
+async function register(I) {
     try {
+    const asiSide = asiSides[I];
     const { sessionId } = parse();
     const secret = await asiSide.getOpinionatedSecret(sessionId);
-    document.getElementById("secret").value = secret;
+    document.getElementById(`secret${I}`).value = secret; // pass to the userSide
     const question = asiSide.getQuestion(secret);
     console.log("question: " + question);
 
@@ -97,15 +85,14 @@ async function register() {
     }
 }
 
-async function proof() {
+async function proof(I) {
+    const userSide = userSides[I];
     const { sessionId, userAddresses } = parse();
-
-    //const userAddress // globally defined
-    const secret = BigInt(document.getElementById("secret").value);
+    const secret = BigInt(document.getElementById(`secret${I}`).value);
     const questions = await userSide.getQuestions(sessionId);
 
     console.log("generating proof...");
-    const proofAndPublicSignals = await Proof.generateProof(userAddress, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
+    const proofAndPublicSignals = await Proof.generateProof(userSide.userAddress, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
 
     console.log("calling proof()...");
     const tx = await userSide.proof(sessionId, proofAndPublicSignals);
@@ -126,20 +113,11 @@ function showReceipt(receipt) {
     font-family: 'Courier New', monospace;
     font-weight: bold;
 }
-#chatroom {
-    width: 100%;
-    table-layout: fixed;
-    word-wrap:break-word
-}
-#chatroom td:nth-child(1) {
-    width: 4em;
-    vertical-align: top;
-}
-#wrapper {
-    overflow: scroll;
-    height: 70%
-}
 </style>
+
+</head>
+<body>
+
 <textarea id="ta" rows="13" style="width: 100%">
 {
     "sessionId": "0x323e2f9e07db0fc7423d9f978d3597b7074fda78e4f74d2cea261d468c7731d0",
@@ -155,15 +133,27 @@ function showReceipt(receipt) {
 }
 </textarea>
 
-<br/>
-<input type="button" value="Verify" onclick="verify()"/>
-<br/>
-<input type="button" value="Create with B" onclick="create()"/>
-<br/>
-<input type="button" value="Register with b" onclick="register()"/>
-<input type="text" id="secret" value="secret here"/>
-<input type="button" value="Proof with B" onclick="proof()"/>
-<br/>
+<div id="all">
+<div>
+{NAME}
+<input type="button" value="Verify" onclick="verify({I})"/>
+<input type="button" value="Create" onclick="create({I})"/>
+<input type="button" value="Register" onclick="register({I})"/>
+<input type="text" id="secret{I}" value="secret here"/>
+<input type="button" value="Proof" onclick="proof({I})"/>
+</div>
+</div>
+<script>
+    const parent = document.getElementById("all");
+    const html = parent.innerHTML;
+    parent.innerHTML = "";
+    for (let I = 0; I < 5; I++) {
+        parent.innerHTML += html.replaceAll("{NAME}", "ABCDE".charAt(I)).replaceAll("{I}", I);
+    }
+</script>
 
-<textarea id="console_ta" rows="13" style="width: 100%">
-</textarea>
+<!-- console visualization; see http://meta.stackexchange.com/a/242491 -->
+<script src="https://gh-canon.github.io/stack-snippet-console/console.min.js"></script>
+
+</body>
+</html>
