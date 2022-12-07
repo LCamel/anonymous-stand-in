@@ -1,0 +1,1 @@
+../out/anonymous_stand_in_js/anonymous_stand_in_generated_verifier.sol
