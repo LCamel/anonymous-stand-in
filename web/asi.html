@@ -22,8 +22,10 @@ function parse() {
     return SessionInfo.parse(document.getElementById("ta").value);
 }
 
-async function create(I) {
-    try {
+const tryCatch = (f) => (I) => {
+    try { f(I).catch((err) => { console.error(err); }); } catch (ex) { console.log(ex); } }
+
+const create = tryCatch(async (I) => {
     const userSide = userSides[I];
     console.log("calling createSession()...");
     const { sessionId, userTreeRoot } = parse();
@@ -31,10 +33,7 @@ async function create(I) {
     const receipt = await tx.wait();
     console.log("createSession: ");
     showReceipt(receipt);
-    } catch (ex) {
-        console.error(ex);
-    }
-}
+});
 
 function eq(a, b) {
     return BigNumber.from(a).eq(BigNumber.from(b));
@@ -70,8 +69,7 @@ async function verify(I) {
     }
 }
 
-async function register(I) {
-    try {
+const register = tryCatch(async (I) => {
     const asiSide = asiSides[I];
     const { sessionId } = parse();
     const secret = await asiSide.getOpinionatedSecret(sessionId);
@@ -84,12 +82,9 @@ async function register(I) {
     const receipt = await tx.wait();
     console.log("register: ");
     showReceipt(receipt);
-    } catch (ex) {
-        console.log(ex.stack);
-    }
-}
+});
 
-async function proof(I) {
+const proof = tryCatch(async (I) => {
     const userSide = userSides[I];
     const { sessionId, userAddresses } = parse();
     const secret = BigInt(document.getElementById(`secret${I}`).value);
@@ -103,7 +98,7 @@ async function proof(I) {
     const receipt = await tx.wait();
     console.log("proof: ");
     showReceipt(receipt);
-}
+});
 function showReceipt(receipt) {
     //console.log(JSON.stringify(receipt, undefined, 4));
     console.log(receipt);
