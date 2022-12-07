@@ -65,7 +65,8 @@ async function verify(I) {
 
 const register = tryCatch(async (I) => {
     const asiSide = asiSides[I];
-    const { sessionId } = parse();
+    const { sessionId, userAddresses } = parse();
+    if (! userAddresses.includes(asiSide.userAddress) && ! confirm("You are not in the list. You will lose money. Proceed?")) return;
     const secret = await asiSide.getOpinionatedSecret(sessionId);
     document.getElementById(`secret${I}`).value = secret; // pass to the userSide
     const question = asiSide.getQuestion(secret);

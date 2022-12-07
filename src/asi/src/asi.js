@@ -27,7 +27,7 @@ const TEMP_ADDR = "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98";
 class UserSide {
     constructor(contractAddress, userAddress, userSigner) {
         this.contract = new ethers.Contract(contractAddress, ABI, userSigner);
-        this.userAddress = userAddress;
+        this.userAddress = ethers.utils.getAddress(userAddress);
         this.userSigner = userSigner;
     }
     // create a new session
@@ -64,7 +64,7 @@ class UserSide {
 class ASISide {
     constructor(contractAddress, userAddress, asiSigner) {
         this.contract = new ethers.Contract(contractAddress, ABI, asiSigner);
-        this.userAddress = userAddress;
+        this.userAddress = ethers.utils.getAddress(userAddress);
         this.asiSigner = asiSigner;
     }
 
