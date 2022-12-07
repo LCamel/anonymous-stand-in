@@ -23,6 +23,7 @@ function parse() {
 }
 
 async function create(I) {
+    try {
     const userSide = userSides[I];
     console.log("calling createSession()...");
     const { sessionId, userTreeRoot } = parse();
@@ -30,6 +31,9 @@ async function create(I) {
     const receipt = await tx.wait();
     console.log("createSession: ");
     showReceipt(receipt);
+    } catch (ex) {
+        console.error(ex);
+    }
 }
 
 function eq(a, b) {
@@ -118,20 +122,14 @@ function showReceipt(receipt) {
 </head>
 <body>
 
-<textarea id="ta" rows="13" style="width: 100%">
-{
-    "sessionId": "0x323e2f9e07db0fc7423d9f978d3597b7074fda78e4f74d2cea261d468c7731d0",
-    "users": [
-        [ "B",
-          "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" ],
-        [ "C",
-          "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC" ],
-        [ "A",
-          "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" ]
-    ],
-    "root": "0x1839a18dfd8c995979d539fede89d2edc9f0b671c549e5f735afe5f82ab7b734"
-}
-</textarea>
+<textarea id="ta" rows="13" style="width: 100%"></textarea>
+<script>
+const si = new SessionInfo();
+si.add("B", userAddresses[1]);
+si.add("C", userAddresses[2]);
+si.add("A", userAddresses[0]);
+document.getElementById("ta").value = si.stringify();
+</script>
 
 <div id="all">
 <div>

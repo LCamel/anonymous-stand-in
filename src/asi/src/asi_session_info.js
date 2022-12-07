@@ -27,7 +27,7 @@ class SessionInfo {
         const o = {
             sessionId: h(this.sessionId),
             users: [...this.idToAddr.entries()],
-            root: h(this.getUserTreeRoot())
+            root: h(this.userTreeRoot)
             };
         return JSON.stringify(o, undefined, 4)
             .replaceAll(/^(\s+\[)\n\s+/gm, (match, p1) => p1 + " ")
