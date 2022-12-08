@@ -1,2 +1,2 @@
 #!/bin/sh
-perl -lane 'print qq#"$&",# if /((function|event|error) .*\))/' src/AnonymousStandIn.sol
+perl -lane 'print qq#"$1",# if /((function|event|error) .*?)\s*.$/' src/AnonymousStandIn.sol
