@@ -20,4 +20,4 @@ npx snarkjs zkey export verificationkey ${CIRCUIT}_0001.zkey verification_key.js
 
 
 npx snarkjs zkey export solidityverifier ${CIRCUIT}_0001.zkey ${CIRCUIT}_verifier.sol
-cat ${CIRCUIT}_verifier.sol | sed 's/pragma solidity ^0.6.11/pragma solidity ^0.8.13/' > ${CIRCUIT}_generated_verifier.sol
+cat ${CIRCUIT}_verifier.sol | sed 's/pragma solidity ^0.6.11/pragma solidity ^0.8.13/' > ${BASE_DIR}/src/${CIRCUIT}_generated_verifier.sol
