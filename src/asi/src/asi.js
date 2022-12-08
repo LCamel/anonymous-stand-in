@@ -5,7 +5,7 @@ import { poseidon } from "circomlibjs"; // for getQuestion()
 // dev: don't hide ethers.js
 
 const ABI = [
-    "event CreateSession(uint indexed sessionId, uint userTreeRoot)",
+    "event CreateSession(uint indexed sessionId, uint userTreeRoot, uint value)",
     "event Register(uint indexed sessionId, uint question, address standIn)",
     "event Proof(uint indexed sessionId, address user)",
     "error ZeroSessionIdError()",
@@ -13,14 +13,17 @@ const ABI = [
     "error ZeroQuestionError()",
     "error SessionAlreadyExistsError()",
     "error SessionDoesNotExistError()",
+    "error ValueMismatchError()",
     "error AlreadyProofedError()",
     "error VerificationError()",
-    "function createSession(uint sessionId, uint userTreeRoot)",
+    "error SendError()",
+    "function createSession(uint sessionId, uint userTreeRoot, uint value) public",
     "function getUserTreeRoot(uint sessionId) public view returns (uint)",
     "function getQuestionTreeRoot(uint sessionId) public view returns (uint)",
-    "function register(uint sessionId, uint question)",
-    "function proof(uint sessionId, uint[2] memory a, uint[2][2] memory b, uint[2] memory c, uint userIndex) public returns (bool r)",
-];
+    "function getValue(uint sessionId) public view returns (uint)",
+    "function register(uint sessionId, uint question) public payable",
+    "function proof(uint sessionId, uint[2] memory a, uint[2][2] memory b, uint[2] memory c, uint userIndex) public",
+    ];
 
 const TEMP_ADDR = "0x00a9a7162107c8119b03c0ce2c9a2ff7bed70c98";
 
@@ -32,13 +35,19 @@ class UserSide {
     }
     // create a new session
     // returns a promise of tx
-    createSession(sessionId, userTreeRoot) {
-        return this.contract.createSession(sessionId, userTreeRoot);
+    createSession(sessionId, userTreeRoot, value) {
+        return this.contract.createSession(sessionId, userTreeRoot, value);
     }
     // Promise: get from the contract on the chain
     getUserTreeRoot(sessionId) {
         return this.contract.getUserTreeRoot(sessionId);
     }
+    getQuestionTreeRoot(sessionId) {
+        return this.contract.getQuestionTreeRoot(sessionId);
+    }
+
+    // TODO: getQuestionsRoot ?
+
     // Promise: register events (ethers.js)
     getRegisterEvents(sessionId) {
         const filter = this.contract.filters.Register(sessionId);
@@ -76,21 +85,22 @@ class ASISide {
     getQuestion(secret) {
         return ASISide.getQuestion(this.userAddress, secret);
     }
+    // Promise
+    getValue(sessionId) {
+        return this.contract.getValue(sessionId);
+    }
 
     // You have to make sure that you are in the user tree before calling register.
     // If not, you will not be able to call prove() to get back the fund.
-    //
-    // This function is the canonical one,
-    // but in 99% of situations you should call registerWithSecret() instead.
+    // Promise
     register(sessionId, question) {
-        return this.contract.connect(this.asiSigner).register(sessionId, question);
+        return this.contract.getValue(sessionId)
+            .then((value) => this.contract.register(sessionId, question, { value }));
     }
 
     // A more convenient version of register().
-    // In 99% of situations you should call this function.
     registerWithSecret(sessionId, secret) {
-        return this.contract.connect(this.asiSigner)
-            .register(sessionId, ASISide.getQuestion(this.userAddress, secret));
+        return this.register(sessionId, ASISide.getQuestion(this.userAddress, secret));
     }
 
     // Promise: secret = sign_by_ASI(sessionId)

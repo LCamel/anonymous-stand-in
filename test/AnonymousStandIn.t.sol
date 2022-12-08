@@ -12,27 +12,27 @@ contract AnonymousStandInTest is Test {
         anonymousStandIn = new AnonymousStandIn();
     }
     function testCreateSessionBasic() public {
-        anonymousStandIn.createSession(1, 2);
+        anonymousStandIn.createSession(1, 2, 42);
     }
-    function testCreateSession(uint sessionId, uint userTreeRoot) public {
+    function testCreateSession(uint sessionId, uint userTreeRoot, uint value) public {
         vm.assume(sessionId != 0);
         vm.assume(userTreeRoot != 0);
-        anonymousStandIn.createSession(sessionId, userTreeRoot);
+        anonymousStandIn.createSession(sessionId, userTreeRoot, value);
     }
     function testCreateSessionZeroSessionId(uint userTreeRoot) public {
         vm.assume(userTreeRoot != 0);
         vm.expectRevert(AnonymousStandIn.ZeroSessionIdError.selector);
-        anonymousStandIn.createSession(0, userTreeRoot);
+        anonymousStandIn.createSession(0, userTreeRoot, 42);
     }
     function testCreateSessionZeroUserTreeRoot(uint sessionId) public {
         vm.assume(sessionId != 0);
         vm.expectRevert(AnonymousStandIn.ZeroUserTreeRootError.selector);
-        anonymousStandIn.createSession(sessionId, 0);
+        anonymousStandIn.createSession(sessionId, 0, 42);
     }
     function testGetUserTreeRoot(uint sessionId, uint userTreeRoot) public {
         vm.assume(sessionId != 0);
         vm.assume(userTreeRoot != 0);
-        anonymousStandIn.createSession(sessionId, userTreeRoot);
+        anonymousStandIn.createSession(sessionId, userTreeRoot, 42);
         uint ans = anonymousStandIn.getUserTreeRoot(sessionId);
         assertEq(ans, userTreeRoot);
     }
@@ -44,14 +44,15 @@ contract AnonymousStandInTest is Test {
     function testRegister(uint sessionId, uint userTreeRoot) public {
         vm.assume(sessionId != 0);
         vm.assume(userTreeRoot != 0);
-        anonymousStandIn.createSession(sessionId, userTreeRoot);
+        uint value = 42;
+        anonymousStandIn.createSession(sessionId, userTreeRoot, value);
         console.log("get getUserTreeRoot: %d", anonymousStandIn.getUserTreeRoot(sessionId));
         console.log("get getQuestionTreeRoot: %d", anonymousStandIn.getQuestionTreeRoot(sessionId));
         assertEq(anonymousStandIn.getQuestionTreeRoot(sessionId), EMPTY_ROOT_LV5);
 
-        anonymousStandIn.register(sessionId, 100);
-        anonymousStandIn.register(sessionId, 200);
-        anonymousStandIn.register(sessionId, 300);
+        anonymousStandIn.register{value: value}(sessionId, 100);
+        anonymousStandIn.register{value: value}(sessionId, 200);
+        anonymousStandIn.register{value: value}(sessionId, 300);
         console.log(anonymousStandIn.getQuestionTreeRoot(sessionId));
         assertEq(anonymousStandIn.getQuestionTreeRoot(sessionId), 9820248798996799339337222160692833371779041583374940739456384906719907708545);
     }

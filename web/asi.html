@@ -20,14 +20,14 @@ function parse() {
     return SessionInfo.parse(document.getElementById("ta").value);
 }
 
-const tryCatch = (f) => async (I) => { try { await f(I); } catch (ex) { console.error(ex); } }
+const tryCatch = async (f) => { try { await f(); } catch (ex) { console.error(ex); } }
 
-const create = tryCatch(async (I) => {
+async function create(I) {
     const userSide = userSides[I];
     console.log("calling createSession()...");
     const { sessionId, userTreeRoot } = parse();
-    await showReceipt(userSide.createSession(sessionId, userTreeRoot));
-});
+    await showReceipt(userSide.createSession(sessionId, userTreeRoot, 42));
+};
 
 function eq(a, b) {
     return BigNumber.from(a).eq(BigNumber.from(b));
@@ -63,7 +63,7 @@ async function verify(I) {
     }
 }
 
-const register = tryCatch(async (I) => {
+async function register(I) {
     const asiSide = asiSides[I];
     const { sessionId, userAddresses } = parse();
     if (! userAddresses.includes(asiSide.userAddress) && ! confirm("You are not in the list. You will lose money. Proceed?")) return;
@@ -73,9 +73,9 @@ const register = tryCatch(async (I) => {
 
     console.log("calling register()...");
     await showReceipt(asiSide.register(sessionId, question));
-});
+};
 
-const proof = tryCatch(async (I) => {
+async function proof(I) {
     const userSide = userSides[I];
     const { sessionId, userAddresses } = parse();
     const secret = BigInt(document.getElementById(`secret${I}`).value);
@@ -83,10 +83,10 @@ const proof = tryCatch(async (I) => {
 
     console.log("generating proof...");
     const proofAndPublicSignals = await Proof.generateProof(userSide.userAddress, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
-
+    console.log(proofAndPublicSignals);
     console.log("calling proof()...");
     await showReceipt(userSide.proof(sessionId, proofAndPublicSignals));
-});
+};
 
 async function showReceipt(txPromise) {
     const tx = await txPromise;
@@ -118,11 +118,11 @@ document.getElementById("ta").value = si.stringify();
 <div id="all">
 <div>
 {NAME}
-<input type="button" value="Verify" onclick="verify({I})"/>
-<input type="button" value="Create" onclick="create({I})"/>
-<input type="button" value="Register" onclick="register({I})"/>
+<input type="button" value="Verify" onclick="tryCatch(() => verify({I}))"/>
+<input type="button" value="Create" onclick="tryCatch(() => create({I}))"/>
+<input type="button" value="Register" onclick="tryCatch(() => register({I}))"/>
 <input type="text" id="secret{I}" value="secret here"/>
-<input type="button" value="Proof" onclick="proof({I})"/>
+<input type="button" value="Proof" onclick="tryCatch(() => proof({I}))"/>
 </div>
 </div>
 <script>
@@ -134,8 +134,8 @@ document.getElementById("ta").value = si.stringify();
     }
 </script>
 
-<!-- console visualization; see http://meta.stackexchange.com/a/242491 -->
-<script src="https://gh-canon.github.io/stack-snippet-console/console.min.js"></script>
+<!-- console visualization; see http://meta.stackexchange.com/a/242491 https://gh-canon.github.io/stack-snippet-console/console.min.js -->
+<script src="./console.min.js"></script>
 
 </body>
 </html>
