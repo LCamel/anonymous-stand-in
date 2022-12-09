@@ -25,8 +25,9 @@ const tryCatch = async (f) => { try { await f(); } catch (ex) { console.error(ex
 async function create(I) {
     const userSide = userSides[I];
     console.log("calling createSession()...");
-    const { sessionId, userTreeRoot } = parse();
-    await showReceipt(userSide.createSession(sessionId, userTreeRoot, 42));
+    const { sessionId, userTreeRoot, value } = parse();
+    console.log("value: " + value);
+    await showReceipt(userSide.createSession(sessionId, userTreeRoot, value));
 };
 
 function eq(a, b) {
@@ -37,11 +38,15 @@ function toHex(a) {
     return BigNumber.from(a).toHexString();
 }
 
+// TODO: try catch
 async function verify(I) {
     try {
     const userSide = userSides[I]; // TODO: 1. extract to lib 2. provider
     const sessionInfo = parse();
     console.log("Parse OK");
+
+    // TODO: check value
+
     if (!sessionInfo.sessionId) {
         console.log("[Invalid] empty sessionId.");
         return;
@@ -50,7 +55,7 @@ async function verify(I) {
     const contractUserTreeRoot = await userSide.getUserTreeRoot(sessionInfo.sessionId);
     console.log("The user tree root from the contract:\n" + toHex(contractUserTreeRoot));
     if (eq(contractUserTreeRoot, 0n)) {
-        console.log("[OK] No existing session. You can create the session.");
+        console.log("[OK] The session does not exist. You can create the session.");
     } else {
         if (eq(contractUserTreeRoot, sessionInfo.userTreeRoot)) {
             console.log("[OK] User tree roots are equal. You can call register() or proof().");
@@ -66,13 +71,12 @@ async function verify(I) {
 async function register(I) {
     const asiSide = asiSides[I];
     const { sessionId, userAddresses } = parse();
-    if (! userAddresses.includes(asiSide.userAddress) && ! confirm("You are not in the list. You will lose money. Proceed?")) return;
+    if (! userAddresses.includes(asiSide.userAddress) && ! confirm("You are not in the list. You will lose money. Continue?")) return;
     const secret = await asiSide.getOpinionatedSecret(sessionId);
     document.getElementById(`secret${I}`).value = secret; // pass to the userSide
-    const question = asiSide.getQuestion(secret);
 
-    console.log("calling register()...");
-    await showReceipt(asiSide.register(sessionId, question));
+    console.log("calling registerAuto()...");
+    await showReceipt(asiSide.registerAuto(sessionId, secret));
 };
 
 async function proof(I) {
@@ -90,6 +94,7 @@ async function proof(I) {
 
 async function showReceipt(txPromise) {
     const tx = await txPromise;
+    console.log(tx);
     const receipt = await tx.wait();
     console.log(receipt);
 }
@@ -108,7 +113,7 @@ async function showReceipt(txPromise) {
 
 <textarea id="ta" rows="13" style="width: 100%"></textarea>
 <script>
-const si = new SessionInfo();
+const si = new SessionInfo(42);
 si.add("B", SampleAccounts.userAddresses[1]);
 si.add("C", SampleAccounts.userAddresses[2]);
 si.add("A", SampleAccounts.userAddresses[0]);

@@ -93,14 +93,17 @@ class ASISide {
     // You have to make sure that you are in the user tree before calling register.
     // If not, you will not be able to call prove() to get back the fund.
     // Promise
-    register(sessionId, question) {
-        return this.contract.getValue(sessionId)
-            .then((value) => this.contract.register(sessionId, question, { value }));
+    register(sessionId, question, value) {
+        return this.contract.register(sessionId, question, { value });
     }
 
     // A more convenient version of register().
-    registerWithSecret(sessionId, secret) {
-        return this.register(sessionId, ASISide.getQuestion(this.userAddress, secret));
+    // It will compute the question from secret, and fetch the value from the contract.
+    // Promise
+    registerAuto(sessionId, secret) {
+        const question = ASISide.getQuestion(this.userAddress, secret);
+        return this.contract.getValue(sessionId)
+            .then((value) => this.register(sessionId, question, value));
     }
 
     // Promise: secret = sign_by_ASI(sessionId)

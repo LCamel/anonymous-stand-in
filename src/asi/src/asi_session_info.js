@@ -6,7 +6,8 @@ class SessionInfo {
         return ethers.BigNumber.from(ethers.utils.randomBytes(32)).toBigInt();
     }
     // sessionId doesn't have to be a strong-random one
-    constructor(sessionId = SessionInfo.random()) {
+    constructor(value, sessionId = SessionInfo.random()) {
+        this.value = BigInt(value);
         this.sessionId = BigInt(sessionId);
         this.idToAddr = new Map();
     }
@@ -26,8 +27,9 @@ class SessionInfo {
         const h = (bi) => "0x" + bi.toString(16);
         const o = {
             sessionId: h(this.sessionId),
+            value: this.value.toString(),
             users: [...this.idToAddr.entries()],
-            root: h(this.userTreeRoot)
+            root: h(this.userTreeRoot),
             };
         return JSON.stringify(o, undefined, 4)
             .replaceAll(/^(\s+\[)\n\s+/gm, (match, p1) => p1 + " ")
@@ -39,7 +41,7 @@ class SessionInfo {
         if (!json.sessionId) {
             throw "sessionId should not be empty";
         }
-        const si = new SessionInfo(json.sessionId);
+        const si = new SessionInfo(json.value, json.sessionId);
         json.users.forEach(([id, addr]) => {
             si.add(id, addr);
         });

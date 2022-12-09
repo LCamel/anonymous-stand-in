@@ -5,9 +5,10 @@
 
 <script>
 "use strict";
-const { poseidon } = require("circomlibjs");
-const { IncrementalMerkleTree } = require("@zk-kit/incremental-merkle-tree");
 
+const { SessionInfo } = require("asi");
+
+// TODO
 const userAddrs = {
     A: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
     B: "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
@@ -17,7 +18,7 @@ const userAddrs = {
 };
 
 // to, from, text
-const msgs = [];
+const msgs = []; // TODO
 const BOT="bot";
 
 function render(msg) {
@@ -51,35 +52,23 @@ function keydown(e) {
         msgs.append({from: t.getAttribute("id"), to, text});
     }
 }
-function computeRoot(map) {
-    const tree = new IncrementalMerkleTree(poseidon, 5, BigInt(0), 2); // Binary tree.
-    for (const [key, value] of map) {
-        tree.insert(value);
-    }
-    return tree.root;
-}
 
-var botState = { sessionId: 0, userAddresses: new Map() };
+var sessionInfo;
 
 function botOnMessage(msg) {
     if (msg.to != BOT) return;
     console.log("msg: ", msg);
-    var arr;
-    if (msg.text == "prepare") {
-        botState = { sessionId: Date.now(), userAddresses: new Map() };
-        console.log(botState);
-        msgs.append({from: BOT, text: `start preparing a session: ${botState.sessionId}`});
+    if (/^prepare (\d+)/.exec(msg.text)) {
+        const value = RegExp.$1;
+        sessionInfo = new SessionInfo(value);
+        console.log(sessionInfo.stringify());
+        msgs.append({from: BOT, text: `start preparing a session with value: ${sessionInfo.value}`});
     } else if (/^add\s+(\w+)/.exec(msg.text)) {
         const userAddress = RegExp.$1;
-        botState.userAddresses.set(msg.from, userAddress);
+        sessionInfo.add(msg.from, userAddress);
         msgs.append({from: BOT, text: `the address of user ${msg.from} is now: ${userAddress}`});
     } else if ("info" == msg.text) {
-        var text = `sessionId: ${botState.sessionId} <br/>\n`;
-        for (const [key, value] of botState.userAddresses) {
-            text += key + ": " + value + "<br/>\n";
-        }
-        text += `root: 0x${computeRoot(botState.userAddresses).toString(16)}`;
-        msgs.append({from: BOT, text});
+        msgs.append({from: BOT, text: sessionInfo.stringify()});
     } else {
         msgs.append({from: BOT, to: msg.from, text: "?"});
     }
@@ -91,6 +80,7 @@ function botOnMessage(msg) {
 * {
     font-family: 'Courier New', monospace;
     font-weight: bold;
+    white-space: pre-wrap; /* this will make whitespace and newline significant */
 }
 #chatroom {
     width: 100%;
@@ -106,6 +96,7 @@ function botOnMessage(msg) {
     height: 70%
 }
 </style>
+[Chatroom] *** Don't Trust, Verify. ***
 <div id="wrapper">
 <table id="chatroom">
     <tbody>
