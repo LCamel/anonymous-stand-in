@@ -26,8 +26,7 @@ async function create(I) {
     const userSide = userSides[I];
     console.log("calling createSession()...");
     const { sessionId, userTreeRoot, value } = parse();
-    console.log("value: " + value);
-    await showReceipt(userSide.createSession(sessionId, userTreeRoot, value));
+    await showReceipt(userSide.userAddress, () => userSide.createSession(sessionId, userTreeRoot, value));
 };
 
 function eq(a, b) {
@@ -76,8 +75,8 @@ async function register(I) {
     document.getElementById(`secret${I}`).value = secret; // pass to the userSide
 
     console.log("calling registerAuto()...");
-    await showReceipt(asiSide.registerAuto(sessionId, secret));
-};
+    await showReceipt(asiSide.userAddress, () => asiSide.registerAuto(sessionId, secret));
+}
 
 async function proof(I) {
     const userSide = userSides[I];
@@ -89,14 +88,18 @@ async function proof(I) {
     const proofAndPublicSignals = await Proof.generateProof(userSide.userAddress, userAddresses, secret, questions, "./anonymous_stand_in.wasm", "./anonymous_stand_in_0001.zkey");
     console.log(proofAndPublicSignals);
     console.log("calling proof()...");
-    await showReceipt(userSide.proof(sessionId, proofAndPublicSignals));
-};
+    await showReceipt(userSide.userAddress, () => userSide.proof(sessionId, proofAndPublicSignals));
+}
 
-async function showReceipt(txPromise) {
-    const tx = await txPromise;
+async function showReceipt(addr, funtionReturnsTxPromise) {
+    //const before = await provider.getBalance(addr); // BigNumber
+
+    const tx = await funtionReturnsTxPromise();
     console.log(tx);
     const receipt = await tx.wait();
     console.log(receipt);
+
+    //const after = await provider.getBalance(addr); // BigNumber
 }
 </script>
 
