@@ -3,7 +3,7 @@ pragma circom 2.1.0;
 include "circomlib/poseidon.circom";
 
 template HashHashHash(HASH_COUNT) {
-    var ZERO = 0;
+    var INIT = 0;
     var HASH_INPUT_COUNT = 16;
     var MAX_INPUT_COUNT = HASH_COUNT * (HASH_INPUT_COUNT - 1);
     signal input inputs[MAX_INPUT_COUNT]; // the user should fill the trailing slots
@@ -11,16 +11,16 @@ template HashHashHash(HASH_COUNT) {
     signal output out;
 
     component hashes[HASH_COUNT];
-
     signal selectedOutput[HASH_COUNT];
     for (var h = 0; h < HASH_COUNT; h++) {
         hashes[h] = Poseidon(HASH_INPUT_COUNT);
 
-        hashes[h].inputs[0] <== h == 0 ? ZERO : hashes[h - 1].out;
+        hashes[h].inputs[0] <== (h == 0) ? INIT : hashes[h - 1].out;
 
         for (var hi = 1; hi < HASH_INPUT_COUNT; hi++) {
             hashes[h].inputs[hi] <== inputs[h * (HASH_INPUT_COUNT - 1) + (hi - 1)];
         }
+
         selectedOutput[h] <== hashes[h].out * selector[h] + (h == 0 ? 0 : selectedOutput[h - 1]);
     }
     out <== selectedOutput[HASH_COUNT - 1] ;
