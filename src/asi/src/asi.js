@@ -77,6 +77,7 @@ class ASISide {
         this.asiSigner = asiSigner;
     }
 
+    // TODO: move to proof?
     // question = hash(userAddress, secret)
     static getQuestion(userAddress, secret) {
         return poseidon([userAddress, secret]);
