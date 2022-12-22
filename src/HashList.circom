@@ -2,7 +2,7 @@ pragma circom 2.1.0;
 
 include "circomlib/poseidon.circom";
 
-template HashHashHash(HASH_COUNT) {
+template HashList(HASH_COUNT) {
     var HASH_INPUT_COUNT = 6;
     var MAX_INPUT_COUNT = 1 + HASH_COUNT * (HASH_INPUT_COUNT - 1);
     signal input inputs[MAX_INPUT_COUNT]; // the user should fill the trailing slots
@@ -26,7 +26,7 @@ template HashHashHash(HASH_COUNT) {
     out <== selectedOutputSum[HASH_COUNT - 1];
 }
 
-component main = HashHashHash(6);
+component main = HashList(6);
 /* INPUT = {"inputs":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],
 "outputHashSelector": [0, 0, 0, 0, 0, 1]
 } */
