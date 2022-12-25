@@ -45,6 +45,9 @@ class SessionInfo {
         json.users.forEach(([id, addr]) => {
             si.add(id, addr);
         });
+
+        // TODO: add check for duplicate addr
+
         if (json.root && BigInt(json.root) != si.userTreeRoot) {
             throw "root mismatch: " + BigInt(json.root) + " " + si.userTreeRoot;
         }
