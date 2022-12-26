@@ -78,12 +78,59 @@ template HashListWithTrailingZero(HASH_COUNT, HASH_INPUT_COUNT) {
     out <== hashList.out;
 }
 
-component main = HashListWithTrailingZero(6, 4);
+//component main = HashListWithTrailingZero(6, 4);
 /*
 INPUT=
 {
 "inputs":[0,1,2,3,4,5,6,7,0,0,0,0,0,0,0,0,0,0,0],
 "length": "8",
 "outputHashSelector": "2"
+}
+*/
+
+template MerkleTree(MT_HASH_INPUT_COUNT, MT_LEVELS) {
+    // for input count = 2
+    // level 0 has 1 hash, total 2 inputs
+    // level 1 has 2 hash, total 4 inputs
+    // level 2 has 4 hash, total 8 inputs
+    var MAX_HASH_COUNT = MT_HASH_INPUT_COUNT ** (MT_LEVELS - 1);
+    var MAX_INPUT_COUNT = MT_HASH_INPUT_COUNT ** MT_LEVELS;
+    log("MT_HASH_INPUT_COUNT: ", MT_HASH_INPUT_COUNT);
+    log("MT_LEVELS: ", MT_LEVELS);
+    log("MAX_HASH_COUNT: ", MAX_HASH_COUNT);
+    log("MAX_INPUT_COUNT: ", MAX_INPUT_COUNT);
+
+
+    signal input inputs[MAX_INPUT_COUNT];
+    signal output out;
+
+    component hh[MT_LEVELS][MAX_HASH_COUNT];
+
+    for (var l = MT_LEVELS - 1; l >= 0; l--) {
+        for (var h = 0; h < MT_HASH_INPUT_COUNT ** l; h++) {
+            hh[l][h] = Poseidon(MT_HASH_INPUT_COUNT);
+            for (var i = 0; i < MT_HASH_INPUT_COUNT; i++) {
+                if (l == MT_LEVELS - 1) {
+                    hh[l][h].inputs[i] <== inputs[h * MT_HASH_INPUT_COUNT + i];
+                } else {
+                    hh[l][h].inputs[i] <== hh[l + 1][h * MT_HASH_INPUT_COUNT + i].out;
+                }
+            }
+        }
+    }
+    hh[0][0].out ==> out;
+}
+component main = MerkleTree(2, 2);
+
+/* INPUT = { "inputs": [0,1,2,3] } */
+
+/*
+template HashListToMerkleTree(HASH_COUNT, HASH_INPUT_COUNT) {
+    var MAX_INPUT_COUNT = 1 + HASH_COUNT * (HASH_INPUT_COUNT - 1);
+    signal input inputs[MAX_INPUT_COUNT];
+    signal input length;
+    signal input outputHashSelector; // TODO: derive from length
+    signal output out;
+
 }
 */
