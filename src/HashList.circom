@@ -88,41 +88,34 @@ INPUT=
 }
 */
 
-template MerkleTree(MT_HASH_INPUT_COUNT, MT_LEVELS) {
+template MerkleTree(N, L) {
     // for input count = 2
     // level 0 has 1 hash, total 2 inputs
     // level 1 has 2 hash, total 4 inputs
     // level 2 has 4 hash, total 8 inputs
-    var MAX_HASH_COUNT = MT_HASH_INPUT_COUNT ** (MT_LEVELS - 1);
-    var MAX_INPUT_COUNT = MT_HASH_INPUT_COUNT ** MT_LEVELS;
-    log("MT_HASH_INPUT_COUNT: ", MT_HASH_INPUT_COUNT);
-    log("MT_LEVELS: ", MT_LEVELS);
-    log("MAX_HASH_COUNT: ", MAX_HASH_COUNT);
-    log("MAX_INPUT_COUNT: ", MAX_INPUT_COUNT);
-
-
-    signal input inputs[MAX_INPUT_COUNT];
+    signal input inputs[N ** L];
     signal output out;
 
-    component hh[MT_LEVELS][MAX_HASH_COUNT];
+    component hh[L][N ** (L - 1)];
 
-    for (var l = MT_LEVELS - 1; l >= 0; l--) {
-        for (var h = 0; h < MT_HASH_INPUT_COUNT ** l; h++) {
-            hh[l][h] = Poseidon(MT_HASH_INPUT_COUNT);
-            for (var i = 0; i < MT_HASH_INPUT_COUNT; i++) {
-                if (l == MT_LEVELS - 1) {
-                    hh[l][h].inputs[i] <== inputs[h * MT_HASH_INPUT_COUNT + i];
+    for (var l = L - 1; l >= 0; l--) {
+        for (var h = 0; h < N ** l; h++) {
+            hh[l][h] = Poseidon(N);
+            for (var i = 0; i < N; i++) {
+                if (l == L - 1) {
+                    hh[l][h].inputs[i] <== inputs[h * N + i];
                 } else {
-                    hh[l][h].inputs[i] <== hh[l + 1][h * MT_HASH_INPUT_COUNT + i].out;
+                    hh[l][h].inputs[i] <== hh[l + 1][h * N + i].out;
                 }
             }
         }
     }
     hh[0][0].out ==> out;
 }
-component main = MerkleTree(2, 2);
+component main = MerkleTree(2, 3);
 
-/* INPUT = { "inputs": [0,1,2,3] } */
+/* INPUT = { "inputs": [0,1,2,3,4,5,6,7] } */
+// 11780650233517635876913804110234352847867393797952240856403268682492028497284
 
 /*
 template HashListToMerkleTree(HASH_COUNT, HASH_INPUT_COUNT) {
