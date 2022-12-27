@@ -84,17 +84,18 @@ template HashListWithTrailingZero(HASH_COUNT, HASH_INPUT_COUNT) {
     var MAX_INPUT_COUNT = 1 + HASH_COUNT * (HASH_INPUT_COUNT - 1);
     signal input inputs[MAX_INPUT_COUNT];
     signal input length;
-    signal input outputHashSelector; // TODO: derive from length
     signal output out;
 
     component forceTrailingZero = ForceTrailingZero(MAX_INPUT_COUNT);
     component hashList = HashList(HASH_COUNT, HASH_INPUT_COUNT);
+    component lengthToOutputHashSelector = LengthToOutputHashSelector(HASH_INPUT_COUNT);
     for (var i = 0; i < MAX_INPUT_COUNT; i++) {
         forceTrailingZero.inputs[i] <== inputs[i];
         hashList.inputs[i] <== inputs[i];
     }
     forceTrailingZero.start <== length;
-    hashList.outputHashSelector <== outputHashSelector;
+    lengthToOutputHashSelector.length <== length;
+    hashList.outputHashSelector <== lengthToOutputHashSelector.outputHashSelector;
     out <== hashList.out;
 }
 
@@ -103,8 +104,7 @@ template HashListWithTrailingZero(HASH_COUNT, HASH_INPUT_COUNT) {
 INPUT=
 {
 "inputs":[0,1,2,3,4,5,6,7,0,0,0,0,0,0,0,0,0,0,0],
-"length": "8",
-"outputHashSelector": "2"
+"length": "8"
 }
 */
 
