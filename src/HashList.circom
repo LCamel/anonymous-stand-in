@@ -50,6 +50,7 @@ template HashList(HASH_COUNT, HASH_INPUT_COUNT) {
 // outputHashSelector:  0 0 0 0 0 1 1 1 2 2 2
 // if (length <= HASH_INPUT_COUNT) { length } else { (length - 2) \ (HASH_INPUT_COUNT - 1)}
 //
+/*
 template LengthToOutputHashSelector(HASH_INPUT_COUNT) {
     assert(HASH_INPUT_COUNT >= 2);
     signal input length;
@@ -61,8 +62,10 @@ template LengthToOutputHashSelector(HASH_INPUT_COUNT) {
     lt.in[0] <== length;
     lt.in[1] <== HASH_INPUT_COUNT;
 
+    // It seems that "\" cause the proof fail.
     outputHashSelector <== (1 - lt.out) * (length - 2) \ (HASH_INPUT_COUNT - 1);
 }
+*/
 
 template ForceTrailingZero(N) {
     assert(N < (1 << 20));    // restrict N to reduce circuit complexity
@@ -79,23 +82,33 @@ template ForceTrailingZero(N) {
     }
 }
 
+// both "length" and "outputHashSelector" shell be specified by the verifier!
 // choose HASH_INPUT_COUNT = 4 to minimize the average gas cost
 template HashListWithTrailingZero(HASH_COUNT, HASH_INPUT_COUNT) {
     var MAX_INPUT_COUNT = 1 + HASH_COUNT * (HASH_INPUT_COUNT - 1);
     signal input inputs[MAX_INPUT_COUNT];
     signal input length;
+    signal input outputHashSelector; // TODO: derive from length
     signal output out;
+
+    // TODO: derive from length
+    assert((length == 0 && outputHashSelector == 0)
+        || (length == 1 && outputHashSelector == 1)
+        || outputHashSelector == (length - 2) \ (HASH_INPUT_COUNT - 1));
+    //assert(outputHashSelector == (length <= HASH_INPUT_COUNT) ? length : (length - 2) \ (HASH_INPUT_COUNT - 1));
 
     component forceTrailingZero = ForceTrailingZero(MAX_INPUT_COUNT);
     component hashList = HashList(HASH_COUNT, HASH_INPUT_COUNT);
-    component lengthToOutputHashSelector = LengthToOutputHashSelector(HASH_INPUT_COUNT);
     for (var i = 0; i < MAX_INPUT_COUNT; i++) {
         forceTrailingZero.inputs[i] <== inputs[i];
         hashList.inputs[i] <== inputs[i];
     }
     forceTrailingZero.start <== length;
-    lengthToOutputHashSelector.length <== length;
-    hashList.outputHashSelector <== lengthToOutputHashSelector.outputHashSelector;
+    // failed to proof
+    //component lengthToOutputHashSelector = LengthToOutputHashSelector(HASH_INPUT_COUNT);
+    //lengthToOutputHashSelector.length <== length;
+    //hashList.outputHashSelector <== lengthToOutputHashSelector.outputHashSelector;
+    hashList.outputHashSelector <== outputHashSelector;
     out <== hashList.out;
 }
 
@@ -166,4 +179,4 @@ template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, MT_N, MT_L) {
     }
     root <== mt.out;
 }
-component main = HashListToMerkleRoot(5, 4, 2, 4);
+component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 2, 4);
