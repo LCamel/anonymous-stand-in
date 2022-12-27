@@ -130,11 +130,13 @@ INPUT=
 }
 */
 
-template MerkleTree(N, L) {
-    // for input count = 2
-    // level 0 has 1 hash, total 2 inputs
-    // level 1 has 2 hash, total 4 inputs
-    // level 2 has 4 hash, total 8 inputs
+// for input count = 2
+// level 0 has 1 hash, total 2 inputs
+// level 1 has 2 hash, total 4 inputs
+// level 2 has 4 hash, total 8 inputs
+template MerkleTree(LEVEL, HASH_INPUT_COUNT) {
+    var N = HASH_INPUT_COUNT;
+    var L = LEVEL;
     signal input inputs[N ** L];
     signal output out;
 
@@ -154,14 +156,10 @@ template MerkleTree(N, L) {
     }
     hh[0][0].out ==> out;
 }
-//component main = MerkleTree(16, 2);
-/* INPUT = { "inputs": [0,1,2,3,4,5,6,7] } */
-// 11780650233517635876913804110234352847867393797952240856403268682492028497284
 
-
-template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, MT_N, MT_L) {
+template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, TREE_LEVEL, TREE_HASH_INPUT_COUNT) {
     var MAX_INPUT_COUNT = 1 + HASH_COUNT * (HASH_INPUT_COUNT - 1);
-    assert(MAX_INPUT_COUNT >= MT_N ** MT_L);
+    assert(MAX_INPUT_COUNT >= TREE_HASH_INPUT_COUNT ** TREE_LEVEL);
 
     signal input inputs[MAX_INPUT_COUNT];
     signal input length;
@@ -169,7 +167,7 @@ template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, MT_N, MT_L) {
     signal output hash;
     signal output root;
 
-    assert(length <= MT_N ** MT_L);
+    assert(length <= TREE_HASH_INPUT_COUNT ** TREE_LEVEL);
     assert(outputHashSelector * HASH_INPUT_COUNT >= length); // TODO: derive from length
 
     // make sure that the list content is what we want
@@ -182,10 +180,10 @@ template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, MT_N, MT_L) {
     hash <== hl.out;
 
     // then transform it to something cheaper to proof
-    component mt = MerkleTree(MT_N, MT_L);
-    for (var i = 0; i < MT_N ** MT_L; i++) {
+    component mt = MerkleTree(TREE_LEVEL, TREE_HASH_INPUT_COUNT);
+    for (var i = 0; i < TREE_HASH_INPUT_COUNT ** TREE_LEVEL; i++) {
         mt.inputs[i] <== inputs[i];
     }
     root <== mt.out;
 }
-component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 2, 4);
+component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 4, 2);
