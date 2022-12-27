@@ -6,6 +6,7 @@ include "circomlib/comparators.circom";
 
 // choose HASH_INPUT_COUNT = 4 to minimize the average gas cost
 template HashList(HASH_COUNT, HASH_INPUT_COUNT) {
+    assert(HASH_INPUT_COUNT >= 2);
     var MAX_INPUT_COUNT = 1 + HASH_COUNT * (HASH_INPUT_COUNT - 1);
     signal input inputs[MAX_INPUT_COUNT]; // the user should fill the trailing slots
     signal input outputHashSelector;
@@ -44,6 +45,24 @@ template HashList(HASH_COUNT, HASH_INPUT_COUNT) {
 748902435937864876241972501117205701882452989848378085868814553847075624288
 */
 
+// for HASH_INPUT_COUNT = 4:
+// length:              0 1 2 3 4 5 6 7 8 9 10
+// outputHashSelector:  0 0 0 0 0 1 1 1 2 2 2
+// if (length <= HASH_INPUT_COUNT) { length } else { (length - 2) \ (HASH_INPUT_COUNT - 1)}
+//
+template LengthToOutputHashSelector(HASH_INPUT_COUNT) {
+    assert(HASH_INPUT_COUNT >= 2);
+    signal input length;
+    signal output outputHashSelector;
+
+    assert(length < (1 << 20)); // restrict length to reduce circuit complexity
+                                // 1 << 20 = 2 ^ 20 = 1048576
+    component lt = LessEqThan(20);
+    lt.in[0] <== length;
+    lt.in[1] <== HASH_INPUT_COUNT;
+
+    outputHashSelector <== (1 - lt.out) * (length - 2) \ (HASH_INPUT_COUNT - 1);
+}
 
 template ForceTrailingZero(N) {
     assert(N < (1 << 20));    // restrict N to reduce circuit complexity
