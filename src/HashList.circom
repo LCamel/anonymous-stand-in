@@ -49,7 +49,8 @@ template HashList(HASH_COUNT, HASH_INPUT_COUNT) {
 // length:              0 1 2 3 4 5 6 7 8 9 10
 // outputHashSelector:  0 0 0 0 0 1 1 1 2 2 2
 // if (length <= HASH_INPUT_COUNT) { length } else { (length - 2) \ (HASH_INPUT_COUNT - 1)}
-//
+// or
+// length < 2 ? 0 : (length - 2) \ (HASH_INPUT_COUNT - 1)
 /*
 template LengthToOutputHashSelector(HASH_INPUT_COUNT) {
     assert(HASH_INPUT_COUNT >= 2);
@@ -93,9 +94,8 @@ template HashListWithTrailingZero(HASH_COUNT, HASH_INPUT_COUNT) {
 
     // TODO: derive from length
     assert((length == 0 && outputHashSelector == 0)
-        || (length == 1 && outputHashSelector == 1)
+        || (length == 1 && outputHashSelector == 0)
         || outputHashSelector == (length - 2) \ (HASH_INPUT_COUNT - 1));
-    //assert(outputHashSelector == (length <= HASH_INPUT_COUNT) ? length : (length - 2) \ (HASH_INPUT_COUNT - 1));
 
     component forceTrailingZero = ForceTrailingZero(MAX_INPUT_COUNT);
     component hashList = HashList(HASH_COUNT, HASH_INPUT_COUNT);
