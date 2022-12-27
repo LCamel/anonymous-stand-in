@@ -52,11 +52,14 @@ console.log(h[5]);
 
 function eq(v1, v2) {
     if (v1 != v2) throw "bad value: " + v1 + " " + v2;
+    console.log(v1);
 }
 
 console.log("=======");
 const hl = new HashList(4);
 eq(hl.hash(), poseidon([0, 0, 0, 0]));
+
+console.log("adding 0 1 2 3");
 hl.add(0);
 eq(hl.hash(), poseidon([0, 0, 0, 0]));
 hl.add(1);
@@ -66,6 +69,7 @@ eq(hl.hash(), poseidon([0, 1, 2, 0]));
 hl.add(3);
 eq(hl.hash(), poseidon([0, 1, 2, 3]));
 
+console.log("adding 4 5 6");
 hl.add(4);
 eq(hl.hash(), poseidon([poseidon([0, 1, 2, 3]), 4, 0, 0]));
 hl.add(5);
@@ -73,17 +77,18 @@ eq(hl.hash(), poseidon([poseidon([0, 1, 2, 3]), 4, 5, 0]));
 hl.add(6);
 eq(hl.hash(), poseidon([poseidon([0, 1, 2, 3]), 4, 5, 6]));
 
+console.log("adding 7 8 9");
 hl.add(7);
 eq(hl.hash(), poseidon([poseidon([poseidon([0, 1, 2, 3]), 4, 5, 6]), 7, 0, 0]));
 hl.add(8);
 eq(hl.hash(), poseidon([poseidon([poseidon([0, 1, 2, 3]), 4, 5, 6]), 7, 8, 0]));
 hl.add(9);
 eq(hl.hash(), poseidon([poseidon([poseidon([0, 1, 2, 3]), 4, 5, 6]), 7, 8, 9]));
-
+console.log("adding 10");
 hl.add(10);
 eq(hl.hash(), poseidon([poseidon([poseidon([poseidon([0, 1, 2, 3]), 4, 5, 6]), 7, 8, 9]), 10, 0, 0]));
 
-
+console.log("=====");
 const hl2 = new HashList(4);
 hl2.add(4);
 hl2.add(5);
