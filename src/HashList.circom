@@ -47,6 +47,7 @@ template HashList(HASH_COUNT, HASH_INPUT_COUNT) {
 
 template ForceTrailingZero(N) {
     assert(N < (1 << 20));    // restrict N to reduce circuit complexity
+                              // 1 << 20 = 2 ^ 20 = 1048576
     signal input inputs[N];
     signal input start;
 
@@ -112,18 +113,38 @@ template MerkleTree(N, L) {
     }
     hh[0][0].out ==> out;
 }
-component main = MerkleTree(2, 3);
-
+//component main = MerkleTree(16, 2);
 /* INPUT = { "inputs": [0,1,2,3,4,5,6,7] } */
 // 11780650233517635876913804110234352847867393797952240856403268682492028497284
 
-/*
-template HashListToMerkleTree(HASH_COUNT, HASH_INPUT_COUNT) {
+
+template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, MT_N, MT_L) {
     var MAX_INPUT_COUNT = 1 + HASH_COUNT * (HASH_INPUT_COUNT - 1);
+    assert(MAX_INPUT_COUNT >= MT_N ** MT_L);
+
     signal input inputs[MAX_INPUT_COUNT];
     signal input length;
     signal input outputHashSelector; // TODO: derive from length
-    signal output out;
+    signal output hash;
+    signal output root;
 
+    assert(length <= MT_N ** MT_L);
+    assert(outputHashSelector * HASH_INPUT_COUNT >= length); // TODO: derive from length
+
+    // make sure that the list content is what we want
+    component hl = HashListWithTrailingZero(HASH_COUNT, HASH_INPUT_COUNT);
+    for (var i = 0; i < MAX_INPUT_COUNT; i++) {
+        hl.inputs[i] <== inputs[i];
+    }
+    hl.length <== length;
+    hl.outputHashSelector <== outputHashSelector;
+    hash <== hl.out;
+
+    // then transform it to something cheaper to proof
+    component mt = MerkleTree(MT_N, MT_L);
+    for (var i = 0; i < MT_N ** MT_L; i++) {
+        mt.inputs[i] <== inputs[i];
+    }
+    root <== mt.out;
 }
-*/
+component main = HashListToMerkleRoot(5, 4, 2, 4);
