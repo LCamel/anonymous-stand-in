@@ -104,11 +104,20 @@ template HashListWithTrailingZero(HASH_COUNT, HASH_INPUT_COUNT) {
         hashList.inputs[i] <== inputs[i];
     }
     forceTrailingZero.start <== length;
-    // failed to proof
+
+    // "[ERROR] snarkJS: Invalid proof"
     //component lengthToOutputHashSelector = LengthToOutputHashSelector(HASH_INPUT_COUNT);
     //lengthToOutputHashSelector.length <== length;
     //hashList.outputHashSelector <== lengthToOutputHashSelector.outputHashSelector;
+
+    // "[ERROR] snarkJS: Invalid proof"
+    //component lt2 = LessThan(20);
+    //lt2.in[0] <== length;
+    //lt2.in[1] <== 2;
+    //hashList.outputHashSelector <== (1 - lt2.out) * ((length - 2) \ (HASH_INPUT_COUNT - 1));
+
     hashList.outputHashSelector <== outputHashSelector;
+
     out <== hashList.out;
 }
 
