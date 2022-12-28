@@ -174,11 +174,11 @@ template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, TREE_LEVEL, TREE_HAS
     signal input inputs[MAX_INPUT_COUNT];
     signal input length;
     signal input outputHashSelector; // TODO: derive from length
-    signal output hash;
+    signal input buf[HASH_INPUT_COUNT];
     signal output root;
 
     assert(length <= TREE_HASH_INPUT_COUNT ** TREE_LEVEL);
-    assert(outputHashSelector * HASH_INPUT_COUNT >= length); // TODO: derive from length
+    assert(1 + (outputHashSelector + 1) * (HASH_INPUT_COUNT - 1) >= length); // TODO: derive from length
 
     // make sure that the list content is what we want
     component hl = HashListWithTrailingZero(HASH_COUNT, HASH_INPUT_COUNT);
@@ -187,7 +187,11 @@ template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, TREE_LEVEL, TREE_HAS
     }
     hl.length <== length;
     hl.outputHashSelector <== outputHashSelector;
-    hash <== hl.out;
+    for (var i = 0; i < HASH_INPUT_COUNT; i++) {
+        hl.buf[i] <== buf[i];
+    }
+    hl.diff === 0; // it works !?
+
 
     // then transform it to something cheaper to proof
     component mt = MerkleTree(TREE_LEVEL, TREE_HASH_INPUT_COUNT);
@@ -196,17 +200,26 @@ template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, TREE_LEVEL, TREE_HAS
     }
     root <== mt.out;
 }
-//component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 4, 2);  // 5447
+component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 4, 2);  // 5447
+//{
+//"inputs":[0,1,2,3,4,0,0,0,0,0,0,0,0,0,0,0],
+//"length":"5",
+//"outputHashSelector":"1",
+//"buf": ["4050345352754260300667252706570081029004026400044882557845061748628670512780", "4", "0", "0"]
+//}
+
 //component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 1, 16); // 2456
 //component main { public [length, outputHashSelector] } = HashListToMerkleRoot(85, 4, 2, 16); // 41400, compile 6:43, proov 14.6, zkey 54MB
 
-component main = HashListWithTrailingZero(2, 4);
+//component main = HashListWithTrailingZero(2, 4);
 //{
 //"inputs":[0,1,2,3,4,0,0],
 //"length":"5",
 //"outputHashSelector": "1",
 //"buf": ["4050345352754260300667252706570081029004026400044882557845061748628670512780", "4", "0", "0"]
 //}
+
+
 
 // for x in `seq 0 255`; do echo -n "$x,"; done
 // perl -MJSON::PP -e '@a = (0..255); print encode_json(\@a)'
