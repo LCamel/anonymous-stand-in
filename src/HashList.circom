@@ -200,7 +200,7 @@ template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, TREE_LEVEL, TREE_HAS
     }
     root <== mt.out;
 }
-component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 4, 2);  // 5447
+component main { public [length, outputHashSelector, buf] } = HashListToMerkleRoot(5, 4, 4, 2);  // 5447
 //{
 //"inputs":[0,1,2,3,4,0,0,0,0,0,0,0,0,0,0,0],
 //"length":"5",
