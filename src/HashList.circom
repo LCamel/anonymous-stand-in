@@ -186,4 +186,9 @@ template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, TREE_LEVEL, TREE_HAS
     }
     root <== mt.out;
 }
-component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 4, 2);
+//component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 4, 2);  // 5447
+//component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 1, 16); // 2456
+component main { public [length, outputHashSelector] } = HashListToMerkleRoot(85, 4, 2, 16); // 41400, compile 6:43, proov 14.6, zkey 54MB
+
+// for x in `seq 0 255`; do echo -n "$x,"; done
+// perl -MJSON::PP -e '@a = (0..255); print encode_json(\@a)'
