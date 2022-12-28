@@ -90,7 +90,8 @@ template HashListWithTrailingZero(HASH_COUNT, HASH_INPUT_COUNT) {
     signal input inputs[MAX_INPUT_COUNT];
     signal input length;
     signal input outputHashSelector; // TODO: derive from length
-    signal output out;
+    signal input buf[HASH_INPUT_COUNT];
+    signal output diff; // should be zero
 
     // TODO: derive from length
     assert((length == 0 && outputHashSelector == 0)
@@ -98,13 +99,24 @@ template HashListWithTrailingZero(HASH_COUNT, HASH_INPUT_COUNT) {
         || outputHashSelector == (length - 2) \ (HASH_INPUT_COUNT - 1));
 
     component forceTrailingZero = ForceTrailingZero(MAX_INPUT_COUNT);
-    component hashList = HashList(HASH_COUNT, HASH_INPUT_COUNT);
     for (var i = 0; i < MAX_INPUT_COUNT; i++) {
         forceTrailingZero.inputs[i] <== inputs[i];
-        hashList.inputs[i] <== inputs[i];
     }
     forceTrailingZero.start <== length;
 
+    component hashList = HashList(HASH_COUNT, HASH_INPUT_COUNT);
+    for (var i = 0; i < MAX_INPUT_COUNT; i++) {
+        hashList.inputs[i] <== inputs[i];
+    }
+    hashList.outputHashSelector <== outputHashSelector;
+
+    component h = Poseidon(HASH_INPUT_COUNT);
+    for (var i = 0; i < HASH_INPUT_COUNT; i++) {
+        h.inputs[i] <== buf[i];
+    }
+
+    diff <== hashList.out - h.out;
+}
     // "[ERROR] snarkJS: Invalid proof"
     //component lengthToOutputHashSelector = LengthToOutputHashSelector(HASH_INPUT_COUNT);
     //lengthToOutputHashSelector.length <== length;
@@ -116,10 +128,8 @@ template HashListWithTrailingZero(HASH_COUNT, HASH_INPUT_COUNT) {
     //lt2.in[1] <== 2;
     //hashList.outputHashSelector <== (1 - lt2.out) * ((length - 2) \ (HASH_INPUT_COUNT - 1));
 
-    hashList.outputHashSelector <== outputHashSelector;
-
-    out <== hashList.out;
-}
+    // [ERROR] snarkJS: Error: Scalar size does not match
+    // if we just compare hashList.out === h.out without output it
 
 //component main = HashListWithTrailingZero(6, 4);
 /*
@@ -188,7 +198,15 @@ template HashListToMerkleRoot(HASH_COUNT, HASH_INPUT_COUNT, TREE_LEVEL, TREE_HAS
 }
 //component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 4, 2);  // 5447
 //component main { public [length, outputHashSelector] } = HashListToMerkleRoot(5, 4, 1, 16); // 2456
-component main { public [length, outputHashSelector] } = HashListToMerkleRoot(85, 4, 2, 16); // 41400, compile 6:43, proov 14.6, zkey 54MB
+//component main { public [length, outputHashSelector] } = HashListToMerkleRoot(85, 4, 2, 16); // 41400, compile 6:43, proov 14.6, zkey 54MB
+
+component main = HashListWithTrailingZero(2, 4);
+//{
+//"inputs":[0,1,2,3,4,0,0],
+//"length":"5",
+//"outputHashSelector": "1",
+//"buf": ["4050345352754260300667252706570081029004026400044882557845061748628670512780", "4", "0", "0"]
+//}
 
 // for x in `seq 0 255`; do echo -n "$x,"; done
 // perl -MJSON::PP -e '@a = (0..255); print encode_json(\@a)'
